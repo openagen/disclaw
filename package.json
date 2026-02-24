@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "test:api-smoke": "node scripts/test-api-smoke.js",
     "test:webhooks": "node scripts/test-webhooks.js",
-    "test:e2e": "node scripts/test-e2e.js"
+    "test:e2e": "node scripts/test-e2e.js",
+    "test:stripe-real": "node scripts/test-stripe-real.js"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",

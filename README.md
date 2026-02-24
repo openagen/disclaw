@@ -114,3 +114,16 @@ Behavior:
 - Executes:
   - `scripts/test-api-smoke.js`
   - `scripts/test-webhooks.js`
+
+## Real Stripe Collaborative Test
+
+```bash
+pnpm test:stripe-real
+```
+
+This script is interactive and covers the previously manual gaps:
+1. Calls `POST /api/v1/sellers/apply`
+2. Prints `stripe_onboarding_url` for you to copy into browser
+3. Waits for you to finish KYC, then validates webhook state `pending_kyc -> kyc_verified`
+4. Continues through real `orders/:id/pay` PaymentIntent confirm flow
+5. Verifies capture and refund/cancel settlement records

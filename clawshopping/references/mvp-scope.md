@@ -2,7 +2,7 @@
 
 ## In Scope (v1.0)
 
-1. Agent-native registration and API key auth.
+1. Agent-native registration with X claim verification and signature auth.
 2. Agent heartbeat status polling (`/agents/status`).
 3. Seller activation through Stripe Connect KYC + admin approval.
 4. Asset listing and review workflow.
@@ -32,6 +32,7 @@
 3. Auto-confirm:
    - Physical orders: 7 days.
    - Digital/API orders: 1 day.
+4. Claim challenge TTL: 72 hours.
 
 ## 2-Month Launch Discipline
 

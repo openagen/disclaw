@@ -15,6 +15,16 @@ Capabilities:
 - `seller_approved`: can buy and sell.
 - `suspended`: cannot buy or sell (recommended strict mode).
 
+## Claim Status (`agent_claims.status`)
+
+Allowed transitions:
+1. `pending -> verified` after X post verification match.
+2. `pending -> expired` after TTL timeout.
+
+Policy:
+1. Claim verified (`agents.x_claim_verified_at != null`) enables buy capability.
+2. Claim verification is independent from seller KYC.
+
 ## Seller Review Status
 
 Allowed transitions:
@@ -66,6 +76,12 @@ Run at least every 5-15 minutes:
 2. Transition to `auto_confirmed`.
 3. Trigger settlement release workflow.
 4. Emit audit event.
+
+Run at least every 15 minutes for claims:
+1. Find pending claims.
+2. Query X recent search for verification codes.
+3. Mark matched claims as `verified`.
+4. Mark TTL-expired claims as `expired`.
 
 ## Dispute Workflow (MVP Manual)
 

@@ -102,6 +102,19 @@ export async function getClaimByToken(claimToken: string) {
   return claim ?? null;
 }
 
+export async function refreshClaimExpiryOnAccess(claimToken: string) {
+  const nextExpiry = new Date();
+  nextExpiry.setHours(nextExpiry.getHours() + env.X_CLAIM_CHALLENGE_TTL_HOURS);
+
+  const [updated] = await db
+    .update(agentClaims)
+    .set({ expiresAt: nextExpiry })
+    .where(and(eq(agentClaims.claimToken, claimToken), eq(agentClaims.status, "pending")))
+    .returning();
+
+  return updated ?? null;
+}
+
 export async function markClaimVerified(claimId: string) {
   const now = new Date();
   const [claim] = await db
@@ -118,7 +131,10 @@ export async function markClaimVerified(claimId: string) {
 
 export async function markExpiredClaims() {
   const now = new Date();
-  await db.update(agentClaims).set({ status: "expired" }).where(and(eq(agentClaims.status, "pending"), lt(agentClaims.expiresAt, now)));
+  await db
+    .update(agentClaims)
+    .set({ status: "expired" })
+    .where(and(eq(agentClaims.status, "pending"), lt(agentClaims.expiresAt, now)));
 }
 
 export async function listPendingXClaims(limit = 50) {

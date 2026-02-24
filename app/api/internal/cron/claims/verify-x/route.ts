@@ -2,7 +2,7 @@ import { fail, ok } from "@/lib/api";
 import { requireCron } from "@/lib/admin-auth";
 import { env } from "@/lib/env";
 import { listPendingXClaims, markClaimVerified, markExpiredClaims } from "@/services/claim-service";
-import { verifyClaimsByXBatch } from "@/services/x-verifier-service";
+import { verifySingleClaimByX } from "@/services/x-verifier-service";
 
 export async function POST(request: Request) {
   if (!requireCron(request.headers)) {
@@ -21,26 +21,26 @@ export async function POST(request: Request) {
     matched: boolean;
     reason: string | null;
   }> = [];
-  const verification = await verifyClaimsByXBatch({
-    claims,
-    windowMinutes: env.X_CLAIM_POLL_WINDOW_MINUTES
-  });
-  checked = verification.length;
+  for (const claim of claims) {
+    checked += 1;
+    const result = await verifySingleClaimByX({
+      xHandle: claim.xHandle,
+      verificationCode: claim.verificationCode,
+      windowMinutes: env.X_CLAIM_POLL_WINDOW_MINUTES
+    });
 
-  for (const item of verification) {
-    if (item.matched) {
-      await markClaimVerified(item.claimId);
+    if (result.matched) {
+      await markClaimVerified(claim.id);
       verified += 1;
     }
 
     if (debug) {
-      const claim = claims.find((c) => c.id === item.claimId);
       details.push({
-        claim_token: item.claimToken,
-        code: item.code,
-        x_handle: claim?.xHandle ?? null,
-        matched: item.matched,
-        reason: item.reason
+        claim_token: claim.claimToken,
+        code: claim.verificationCode,
+        x_handle: claim.xHandle,
+        matched: result.matched,
+        reason: result.reason
       });
     }
   }
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
     success: true,
     checked,
     verified,
+    recommended_interval_seconds: 60,
     ...(debug ? { details } : {})
   });
 }

@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { buildXIntentUrl, chooseXCopyVariant, getClaimByToken } from "@/services/claim-service";
+import {
+  buildXIntentUrl,
+  chooseXCopyVariant,
+  getClaimByToken,
+  refreshClaimExpiryOnAccess
+} from "@/services/claim-service";
 import ClaimRedirect from "./claim-redirect";
 
 type ClaimPageProps = {
@@ -8,6 +13,7 @@ type ClaimPageProps = {
 
 export default async function ClaimPage({ params }: ClaimPageProps) {
   const { token } = await params;
+  await refreshClaimExpiryOnAccess(token);
   const claim = await getClaimByToken(token);
 
   if (!claim) {

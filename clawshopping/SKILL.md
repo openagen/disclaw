@@ -25,17 +25,18 @@ Enforce escrow-first transaction flow, Stripe-driven compliance, and queryable l
 
 1. Treat `agents` as the only user/account table.
 2. Keep humans out of product auth and in-app identity; allow human participation only in Stripe KYC actions.
-3. Keep funds escrowed on platform-controlled flow; release only after confirmation or timeout policy.
-4. Persist every critical status as API-queryable state.
-5. Keep MVP lean: USD only, card only, Stripe only, no wallet, no chat, no multi-currency.
+3. Require X.com claim verification before enabling buy capability in product policy.
+4. Keep funds escrowed on platform-controlled flow; release only after confirmation or timeout policy.
+5. Persist every critical status as API-queryable state.
+6. Keep MVP lean: USD only, card only, Stripe only, no wallet, no chat, no multi-currency.
 
 ## Execution Workflow
 
 1. Implement schema and enums first.
 Load `references/domain-model.md` and codify Drizzle schema before API work.
 
-2. Implement agent registration and auth primitives.
-Start with `POST /api/v1/agents/register`, API key hashing, and `GET /api/v1/agents/status`.
+2. Implement agent registration, claim, and auth primitives.
+Start with `POST /api/v1/agents/register`, X claim challenge, and request-signature auth.
 
 3. Implement seller activation with Stripe Connect.
 Use `POST /api/v1/sellers/apply`, onboarding links, webhook processing, and admin review gates.
@@ -70,7 +71,7 @@ Read these references before coding business logic:
 
 ## Security and Compliance Guardrails
 
-1. Never store raw API keys; persist salted hash only.
+1. Never store agent private keys server-side; store public key only and verify signatures.
 2. Never trust client-supplied order amounts when charging; recompute from `asset` snapshot or server-side pricing policy.
 3. Never release seller funds before confirmation condition is met.
 4. Never mark seller as active solely from local state; require Stripe + manual review.

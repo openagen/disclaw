@@ -79,3 +79,25 @@ Canonical payload:
 - Request auth includes nonce replay protection table (`auth_nonces`).
 - Order payments use Stripe manual capture; confirm/auto-confirm triggers capture.
 - Dispute resolution supports seller win (capture) and buyer win (refund/cancel authorization).
+
+## Reproducible Webhook E2E Test
+
+1. Start app server:
+
+```bash
+pnpm start -p 3000
+```
+
+2. In another terminal, run:
+
+```bash
+set -a; source .env; set +a
+pnpm test:webhooks
+```
+
+This script sends signed webhook payloads directly to `/api/v1/webhooks/stripe` and verifies DB transitions for:
+- `payment_intent.amount_capturable_updated`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `charge.dispute.created` (including idempotent resend)
+- `account.updated` (`pending_kyc -> kyc_verified`)

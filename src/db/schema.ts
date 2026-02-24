@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
   boolean,
   char,
@@ -140,7 +139,7 @@ export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
-    .$onUpdate(() => sql`now()`)
+    .$onUpdate(() => new Date())
 });
 
 export const authNonces = pgTable("auth_nonces", {
@@ -162,7 +161,7 @@ export const riskCounters = pgTable("risk_counters", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
-    .$onUpdate(() => sql`now()`)
+    .$onUpdate(() => new Date())
 });
 
 export const settlements = pgTable("settlements", {

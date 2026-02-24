@@ -4,7 +4,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
-  STRIPE_PLATFORM_ACCOUNT_ID: z.string().min(1),
+  STRIPE_PLATFORM_ACCOUNT_ID: z.string().min(1).optional(),
   PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(500),
   NEW_SELLER_WINDOW_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   NEW_SELLER_DAILY_ORDER_LIMIT: z.coerce.number().int().min(1).max(1000).default(20),

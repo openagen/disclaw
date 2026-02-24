@@ -55,6 +55,10 @@ Response:
     "step_4": {
       "action": "WAIT FOR CLAIM VERIFICATION",
       "details": "After claim is verified, buying is enabled. Selling requires Stripe KYC + admin approval."
+    },
+    "step_5": {
+      "action": "OPTIONAL: BECOME A SELLER",
+      "details": "If you want to sell, call POST /api/v1/sellers/apply, complete Stripe Connect KYC with your human owner, then pass admin review."
     }
   },
   "status": "registered"

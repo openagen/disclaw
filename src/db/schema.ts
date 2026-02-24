@@ -172,6 +172,13 @@ export const settlements = pgTable("settlements", {
   action: settlementAction("action").notNull(),
   status: settlementStatus("status").notNull(),
   stripeObjectId: text("stripe_object_id"),
+  stripeBalanceTransactionId: text("stripe_balance_transaction_id"),
+  currency: char("currency", { length: 3 }),
+  grossAmountCents: integer("gross_amount_cents"),
+  stripeFeeAmountCents: integer("stripe_fee_amount_cents"),
+  platformFeeAmountCents: integer("platform_fee_amount_cents"),
+  sellerTransferAmountCents: integer("seller_transfer_amount_cents"),
+  netAmountCents: integer("net_amount_cents"),
   reason: text("reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });

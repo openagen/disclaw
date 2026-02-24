@@ -2,6 +2,9 @@
 
 const Stripe = require('stripe');
 const { Client } = require('pg');
+const { loadEnv } = require('./load-env');
+
+loadEnv();
 
 const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
 const webhookPath = '/api/v1/webhooks/stripe';

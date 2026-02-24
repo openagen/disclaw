@@ -101,3 +101,16 @@ This script sends signed webhook payloads directly to `/api/v1/webhooks/stripe` 
 - `payment_intent.payment_failed`
 - `charge.dispute.created` (including idempotent resend)
 - `account.updated` (`pending_kyc -> kyc_verified`)
+
+## One-Command E2E
+
+```bash
+pnpm test:e2e
+```
+
+Behavior:
+- Auto-loads `.env`
+- If server is not running, runs `pnpm build` and starts `pnpm start -p 3000`
+- Executes:
+  - `scripts/test-api-smoke.js`
+  - `scripts/test-webhooks.js`

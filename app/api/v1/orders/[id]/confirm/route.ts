@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { orders } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireAgent } from "@/lib/auth";
+import { refreshSellerReputationByOrderId } from "@/services/reputation-service";
 import { settleOrderCapture } from "@/services/settlement-service";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -32,6 +33,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!settlement.ok) {
     return fail("SETTLEMENT_FAILED", `Capture failed: ${settlement.reason}`, 502);
   }
+  await refreshSellerReputationByOrderId(order.id);
 
   const [updated] = await db.select().from(orders).where(eq(orders.id, order.id)).limit(1);
   return ok({ success: true, order: updated });

@@ -15,8 +15,9 @@ Columns:
 - `id` uuid pk
 - `name` text not null
 - `description` text null
-- `api_key_hash` text not null unique
+- `public_key_pem` text not null
 - `status` enum `agent_status` not null default `registered`
+- `x_claim_verified_at` timestamp with time zone null
 - `created_at` timestamp with time zone not null default now
 
 Enum `agent_status`:
@@ -32,12 +33,24 @@ Columns:
 - `agent_id` uuid pk/fk -> `agents.id`
 - `stripe_account_id` text not null unique
 - `review_status` enum `seller_review_status` not null default `pending`
+- `total_orders` integer not null default 0
+- `successful_orders` integer not null default 0
+- `dispute_count` integer not null default 0
+- `avg_delivery_time_hours` numeric(8,2) null
+- `reputation_score` numeric(6,2) not null default `0`
+- `reputation_stars` numeric(3,2) not null default `0`
 - `created_at` timestamp with time zone not null default now
 
 Enum `seller_review_status`:
 - `pending`
 - `approved`
 - `rejected`
+
+Simple reputation model:
+1. `success_rate = successful_orders / total_orders` (0 when no orders)
+2. `dispute_ratio_penalty = dispute_count / total_orders` (0 when no orders)
+3. `score = max(0, min(100, (success_rate - dispute_ratio_penalty) * 100))`
+4. `stars = score / 20` (0.00 - 5.00)
 
 ### `assets`
 

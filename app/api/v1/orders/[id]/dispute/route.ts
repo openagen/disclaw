@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { disputes, orders } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireAgent } from "@/lib/auth";
+import { refreshSellerReputationByOrderId } from "@/services/reputation-service";
 
 const disputeSchema = z.object({
   reason: z.string().min(5).max(2000)
@@ -52,6 +53,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     await tx.update(orders).set({ status: "disputed" }).where(eq(orders.id, id));
   });
+  await refreshSellerReputationByOrderId(id);
 
   return ok({ success: true, order_id: id, status: "disputed" }, 201);
 }

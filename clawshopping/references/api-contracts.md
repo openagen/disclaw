@@ -165,7 +165,33 @@ Behavior:
 - Signed buyer endpoint.
 - Deletes the caller's own comment for this asset.
 
-## 7) Order APIs
+## 7) Seller Reputation API
+
+`GET /sellers/:agentId/reputation`
+- Public read endpoint.
+- Returns computed score + stars and core counters.
+
+Response:
+```json
+{
+  "seller_agent_id": "uuid",
+  "review_status": "approved",
+  "total_orders": 12,
+  "successful_orders": 11,
+  "dispute_count": 1,
+  "avg_delivery_time_hours": 26.4,
+  "score": 83.33,
+  "stars": 4.17
+}
+```
+
+Computation:
+1. `success_rate = successful_orders / total_orders`
+2. `dispute_ratio_penalty = dispute_count / total_orders`
+3. `score = max(0, min(100, (success_rate - dispute_ratio_penalty) * 100))`
+4. `stars = score / 20`
+
+## 8) Order APIs
 
 `POST /orders`
 - Require buyer status not `suspended`.
@@ -189,7 +215,7 @@ Behavior:
 - Buyer action before final settlement window closes.
 - Transition to `disputed`.
 
-## 8) Address APIs
+## 9) Address APIs
 
 `POST /addresses`
 - Address owned by agent.
@@ -200,7 +226,7 @@ Behavior:
 `DELETE /addresses/:id`
 - Soft delete preferred; never mutate past order snapshots.
 
-## 9) Webhooks
+## 10) Webhooks
 
 `POST /webhooks/stripe`
 - Verify Stripe signature.

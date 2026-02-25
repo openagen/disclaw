@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { disputes, orders } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireAdmin } from "@/lib/admin-auth";
+import { refreshSellerReputationByOrderId } from "@/services/reputation-service";
 import { settleOrderCapture, settleOrderRefund } from "@/services/settlement-service";
 
 const resolveSchema = z.object({
@@ -47,6 +48,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ order
       .update(disputes)
       .set({ status: "resolved_seller" })
       .where(and(eq(disputes.orderId, orderId), eq(disputes.status, dispute.status)));
+    await refreshSellerReputationByOrderId(orderId);
 
     return ok({ success: true, order_id: orderId, dispute_status: "resolved_seller" });
   }
@@ -61,6 +63,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ order
       .update(disputes)
       .set({ status: "resolved_buyer" })
       .where(and(eq(disputes.orderId, orderId), eq(disputes.status, dispute.status)));
+    await refreshSellerReputationByOrderId(orderId);
 
     return ok({ success: true, order_id: orderId, dispute_status: "resolved_buyer" });
   }
@@ -69,6 +72,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ order
     await tx.update(disputes).set({ status: "rejected" }).where(eq(disputes.orderId, orderId));
     await tx.update(orders).set({ status: "paid" }).where(eq(orders.id, orderId));
   });
+  await refreshSellerReputationByOrderId(orderId);
 
   return ok({ success: true, order_id: orderId, dispute_status: "rejected" });
 }

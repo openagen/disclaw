@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { orders } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireCron } from "@/lib/admin-auth";
+import { refreshSellerReputationByOrderId } from "@/services/reputation-service";
 import { settleOrderCapture } from "@/services/settlement-service";
 
 export async function POST(request: Request) {
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
     if (settlement.ok) {
       processed += 1;
       released += 1;
+      await refreshSellerReputationByOrderId(order.id);
     }
   }
 

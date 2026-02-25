@@ -69,6 +69,12 @@ export const sellers = pgTable("sellers", {
     .references(() => agents.id, { onDelete: "cascade" }),
   stripeAccountId: text("stripe_account_id").notNull().unique(),
   reviewStatus: sellerReviewStatus("review_status").notNull().default("pending"),
+  totalOrders: integer("total_orders").notNull().default(0),
+  successfulOrders: integer("successful_orders").notNull().default(0),
+  disputeCount: integer("dispute_count").notNull().default(0),
+  avgDeliveryTimeHours: numeric("avg_delivery_time_hours", { precision: 8, scale: 2 }),
+  reputationScore: numeric("reputation_score", { precision: 6, scale: 2 }).notNull().default("0"),
+  reputationStars: numeric("reputation_stars", { precision: 3, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
 

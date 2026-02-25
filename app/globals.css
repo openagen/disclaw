@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f2;
-  --foreground: #1c1f17;
+  --background: #fff6f2;
+  --foreground: #251514;
   --card: #ffffff;
-  --card-foreground: #1c1f17;
-  --primary: #0e7a68;
-  --primary-foreground: #f4fff9;
-  --muted: #e8ecdf;
-  --muted-foreground: #4f5b42;
-  --border: #d2d9c7;
+  --card-foreground: #251514;
+  --primary: #e54b2f;
+  --primary-foreground: #fff6f2;
+  --muted: #ffe4dc;
+  --muted-foreground: #7a3e32;
+  --border: #efc2b6;
 }
 
 * {
@@ -17,7 +17,7 @@
 }
 
 body {
-  background: radial-gradient(circle at top right, #dcebd9 0%, var(--background) 55%);
+  background: radial-gradient(circle at top right, #ffd9cc 0%, var(--background) 55%);
   color: var(--foreground);
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
 }

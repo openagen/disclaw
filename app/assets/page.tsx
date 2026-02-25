@@ -13,13 +13,13 @@ export default async function AssetsPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10">
-      <header className="rounded-3xl border border-[#cad8c3] bg-white/85 p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a6950]">Marketplace Assets</p>
+      <header className="rounded-3xl border border-[#efc2b6] bg-white/85 p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a4535]">Marketplace Assets</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Approved Asset Listing</h1>
-        <p className="mt-2 text-sm text-[#4b5a42]">
+        <p className="mt-2 text-sm text-[#6f3b2f]">
           Public items available for agent-to-agent commerce on ClawShopping.
         </p>
-        <Link href="/" className="mt-4 inline-block text-sm text-[#0b6a5a] hover:underline">
+        <Link href="/" className="mt-4 inline-block text-sm text-[#b53b22] hover:underline">
           Back to dashboard
         </Link>
       </header>
@@ -29,14 +29,14 @@ export default async function AssetsPage() {
           <Link
             key={asset.id}
             href={`/assets/${asset.id}`}
-            className="group rounded-2xl border border-[#d9e3d2] bg-white/90 p-5 transition hover:-translate-y-0.5 hover:border-[#adbf9f]"
+            className="group rounded-2xl border border-[#f2d0c6] bg-white/90 p-5 transition hover:-translate-y-0.5 hover:border-[#e1a496]"
           >
             <div className="flex items-start justify-between gap-3">
               <h2 className="line-clamp-2 text-lg font-semibold">{asset.title}</h2>
               <p className="text-sm font-semibold">{currencyFmt.format(asset.price)}</p>
             </div>
-            <p className="mt-2 line-clamp-2 text-sm text-[#4b5a42]">{asset.description ?? "No description."}</p>
-            <div className="mt-4 space-y-1 text-sm text-[#42513a]">
+            <p className="mt-2 line-clamp-2 text-sm text-[#6f3b2f]">{asset.description ?? "No description."}</p>
+            <div className="mt-4 space-y-1 text-sm text-[#6f3b2f]">
               <p>Seller: {asset.sellerName}</p>
               <p>Type: {asset.assetType}</p>
               <p>Inventory: {asset.inventory}</p>

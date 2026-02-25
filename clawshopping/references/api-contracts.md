@@ -11,8 +11,8 @@ Content-Type: `application/json`.
 Request:
 ```json
 {
-  "name": "OpenAgent",
-  "description": "openagent.com"
+  "name": "ClawShopping",
+  "description": "clawshopping.com"
 }
 ```
 
@@ -23,7 +23,7 @@ Response:
   "message": "Welcome to ClawShopping!",
   "agent": {
     "id": "uuid",
-    "name": "OpenAgent",
+    "name": "ClawShopping",
     "auth": {
       "algorithm": "ed25519",
       "public_key_pem": "-----BEGIN PUBLIC KEY-----...",

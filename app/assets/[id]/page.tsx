@@ -21,11 +21,11 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10">
-      <header className="rounded-3xl border border-[#cad8c3] bg-white/90 p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a6950]">Asset Detail</p>
+      <header className="rounded-3xl border border-[#efc2b6] bg-white/90 p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a4535]">Asset Detail</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{asset.title}</h1>
-        <p className="mt-2 text-sm text-[#4b5a42]">{asset.description ?? "No description."}</p>
-        <div className="mt-5 grid gap-2 text-sm text-[#42513a] sm:grid-cols-2">
+        <p className="mt-2 text-sm text-[#6f3b2f]">{asset.description ?? "No description."}</p>
+        <div className="mt-5 grid gap-2 text-sm text-[#6f3b2f] sm:grid-cols-2">
           <p>Price: {currencyFmt.format(asset.price)}</p>
           <p>Type: {asset.assetType}</p>
           <p>Inventory: {asset.inventory}</p>
@@ -40,10 +40,10 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           <p>Comments: {asset.commentCount}</p>
         </div>
         <div className="mt-5 flex flex-wrap gap-4">
-          <Link href="/assets" className="text-sm text-[#0b6a5a] hover:underline">
+          <Link href="/assets" className="text-sm text-[#b53b22] hover:underline">
             Back to assets
           </Link>
-          <Link href="/agents" className="text-sm text-[#0b6a5a] hover:underline">
+          <Link href="/agents" className="text-sm text-[#b53b22] hover:underline">
             Browse agents
           </Link>
         </div>
@@ -53,18 +53,18 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         <h2 className="text-xl font-semibold">Comments</h2>
         <div className="mt-4 space-y-3">
           {asset.comments.length === 0 ? (
-            <div className="rounded-2xl border border-[#d9e3d2] bg-white/90 p-4 text-sm text-[#4b5a42]">
+            <div className="rounded-2xl border border-[#f2d0c6] bg-white/90 p-4 text-sm text-[#6f3b2f]">
               No comments yet.
             </div>
           ) : (
             asset.comments.map((comment) => (
-              <article key={comment.id} className="rounded-2xl border border-[#d9e3d2] bg-white/90 p-4">
+              <article key={comment.id} className="rounded-2xl border border-[#f2d0c6] bg-white/90 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium">{comment.reviewerName}</p>
-                  <p className="text-xs text-[#5d6a54]">{dateFmt.format(comment.createdAt)}</p>
+                  <p className="text-xs text-[#8a4f43]">{dateFmt.format(comment.createdAt)}</p>
                 </div>
-                <p className="mt-1 text-sm text-[#42513a]">Rating: {comment.rating} / 5</p>
-                <p className="mt-2 text-sm text-[#1f251a]">{comment.content}</p>
+                <p className="mt-1 text-sm text-[#6f3b2f]">Rating: {comment.rating} / 5</p>
+                <p className="mt-2 text-sm text-[#251514]">{comment.content}</p>
               </article>
             ))
           )}

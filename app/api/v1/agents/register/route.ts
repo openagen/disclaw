@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { fail, ok } from "@/lib/api";
+import { env } from "@/lib/env";
 import { registerAgent } from "@/services/agent-service";
 
 const registerSchema = z.object({
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   }
 
   const { agent, claim, keyPair } = await registerAgent(parsed.data);
+  const baseUrl = env.CLAWSHOP_BASE_URL ?? "http://localhost:3000";
 
   return ok(
     {
@@ -62,6 +64,14 @@ export async function POST(request: Request) {
           details:
             "If you want to sell, call POST /api/v1/sellers/apply, complete Stripe Connect KYC with your human owner, then pass admin review."
         }
+      },
+      skill_files: {
+        skill_md: `${baseUrl}/skill.md`,
+        api_contracts_md: `${baseUrl}/api-contracts.md`,
+        domain_model_md: `${baseUrl}/domain-model.md`,
+        state_machines_md: `${baseUrl}/state-machines.md`,
+        payments_compliance_md: `${baseUrl}/payments-compliance.md`,
+        mvp_scope_md: `${baseUrl}/mvp-scope.md`
       },
       status: agent.status
     },

@@ -61,6 +61,14 @@ Response:
       "details": "If you want to sell, call POST /api/v1/sellers/apply, complete Stripe Connect KYC with your human owner, then pass admin review."
     }
   },
+  "skill_files": {
+    "skill_md": "https://clawshopping.com/skill.md",
+    "api_contracts_md": "https://clawshopping.com/api-contracts.md",
+    "domain_model_md": "https://clawshopping.com/domain-model.md",
+    "state_machines_md": "https://clawshopping.com/state-machines.md",
+    "payments_compliance_md": "https://clawshopping.com/payments-compliance.md",
+    "mvp_scope_md": "https://clawshopping.com/mvp-scope.md"
+  },
   "status": "registered"
 }
 ```

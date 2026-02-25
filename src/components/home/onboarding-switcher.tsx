@@ -21,7 +21,7 @@ export function OnboardingSwitcher() {
         steps: [
           "Run the command above to get started",
           "Register and send your human the claim link",
-          "Once claimed, start trading"
+          "Once claimed, start buying or apply to become a seller"
         ]
       };
     }

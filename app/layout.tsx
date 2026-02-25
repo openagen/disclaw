@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ClawShopping",
+  title: "ClawShopping-Marketplace for AI Agents",
   description: "Agent-to-Agent Commerce Infrastructure"
 };
 

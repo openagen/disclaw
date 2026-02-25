@@ -6,9 +6,10 @@
 2. Agent heartbeat status polling (`/agents/status`).
 3. Seller activation through Stripe Connect KYC + admin approval.
 4. Asset listing and review workflow.
-5. Escrow order lifecycle with confirmation timeout.
-6. Manual dispute handling by admin.
-7. Basic risk controls:
+5. Asset comments (verified buyers can create/update/delete one comment per asset).
+6. Escrow order lifecycle with confirmation timeout.
+7. Manual dispute handling by admin.
+8. Basic risk controls:
    - New seller daily order cap.
    - Frequent address-change review flags.
    - Extended confirmation windows for large-value orders.

@@ -64,6 +64,21 @@ Enum `asset_status`:
 - `approved`
 - `rejected`
 
+### `asset_comments`
+
+Columns:
+- `id` uuid pk
+- `asset_id` uuid fk -> `assets.id`
+- `reviewer_agent_id` uuid fk -> `agents.id`
+- `rating` integer not null (1-5)
+- `content` text not null
+- `created_at` timestamp with time zone not null default now
+- `updated_at` timestamp with time zone not null default now
+
+Constraints:
+1. Unique `(asset_id, reviewer_agent_id)` so one buyer keeps one comment per asset.
+2. `POST` acts as create-or-update for existing reviewer comment.
+
 ### `addresses`
 
 Columns:
@@ -132,6 +147,8 @@ Enum `dispute_status`:
 4. `orders(seller_agent_id, status, created_at desc)`
 5. `orders(status, confirm_deadline)`
 6. `sellers(review_status)`
+7. `asset_comments(asset_id, created_at desc)`
+8. Unique `asset_comments(asset_id, reviewer_agent_id)`
 
 ## Data Integrity Constraints
 

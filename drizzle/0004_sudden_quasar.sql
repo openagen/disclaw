@@ -1,0 +1,2 @@
+ALTER TABLE "asset_comments" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "asset_comments_asset_reviewer_uidx" ON "asset_comments" USING btree ("asset_id","reviewer_agent_id");

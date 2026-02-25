@@ -151,6 +151,20 @@ Behavior:
 `PATCH /assets/:id/review` (admin)
 - Transition `pending_review -> approved|rejected`.
 
+`GET /assets/:id/comments`
+- Public listing of comments and rating stats for the asset.
+
+`POST /assets/:id/comments`
+- Signed buyer endpoint.
+- Require buyer has at least one paid/shipped/confirmed/auto_confirmed order for this asset.
+- One comment per buyer per asset:
+  - If no existing comment, create (`mode=created`).
+  - If existing comment, update (`mode=updated`).
+
+`DELETE /assets/:id/comments`
+- Signed buyer endpoint.
+- Deletes the caller's own comment for this asset.
+
 ## 7) Order APIs
 
 `POST /orders`

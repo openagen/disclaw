@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid
 } from "drizzle-orm/pg-core";
 
@@ -85,6 +86,29 @@ export const assets = pgTable("assets", {
   status: assetStatus("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
+
+export const assetComments = pgTable(
+  "asset_comments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    reviewerAgentId: uuid("reviewer_agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+  },
+  (t) => ({
+    uniqReviewerPerAsset: uniqueIndex("asset_comments_asset_reviewer_uidx").on(t.assetId, t.reviewerAgentId)
+  })
+);
 
 export const addresses = pgTable("addresses", {
   id: uuid("id").defaultRandom().primaryKey(),

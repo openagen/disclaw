@@ -50,6 +50,12 @@ Follow `references/payments-compliance.md` for Destination Charges and release c
 6. Add risk controls and operational jobs.
 Enforce new seller rate limits, anomaly triggers, large-order confirmation extension, and cron-based auto-confirm.
 
+Payment execution note:
+1. First buyer payment must support human checkout bootstrap (`checkout_url`).
+2. After webhook success, persist buyer `stripe_customer_id` and `default_payment_method_id` for MIT.
+3. If MIT requires human help, always return machine-readable `human_assistance` payload.
+4. Agent must output full `checkout_url` on its own line to avoid truncation when humans copy/open links.
+
 7. Validate against MVP scope before adding features.
 Reject scope creep unless explicitly asked; use `references/mvp-scope.md`.
 

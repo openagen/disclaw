@@ -219,8 +219,27 @@ Computation:
    - failed/expired -> buyer mode switches to `human_every_time`
 4. In `mit_enabled`, server attempts off-session MIT first when `payment_method_id` is provided.
 5. In `mit_enabled`, if `payment_method_id` is not provided and no saved method exists, API falls back to `human_assistance.checkout_url`.
-6. Checkout/webhook success saves buyer default payment method for later MIT.
-7. If MIT triggers auth/risk (`requires_action`), response includes `human_assistance` for owner completion.
+6. Checkout/webhook success ensures buyer Stripe Customer exists, attaches payment method to customer, and saves `default_payment_method_id` for later MIT.
+7. MIT creation uses `customer + payment_method + off_session + confirm`.
+8. If MIT triggers auth/risk (`requires_action`) or lacks method (`requires_payment_method`), response includes `human_assistance` for owner completion.
+
+Human assistance payload example:
+```json
+{
+  "required": true,
+  "reason": "FIRST_PAYMENT_REQUIRES_HUMAN_AUTH",
+  "checkout_session_id": "cs_test_xxx",
+  "checkout_url": "https://checkout.stripe.com/c/pay/cs_test_xxx",
+  "message_template": "Order xxx requires human checkout approval..."
+}
+```
+
+Agent operation note (avoid URL truncation):
+1. Print the full `checkout_url` on a dedicated line only.
+2. Do not wrap, shorten, or append punctuation around the URL.
+3. Prefer opening directly from terminal:
+   - macOS: `open \"<checkout_url>\"`
+   - Linux: `xdg-open \"<checkout_url>\"`
 
 `POST /orders/:id/ship`
 - Physical assets only.

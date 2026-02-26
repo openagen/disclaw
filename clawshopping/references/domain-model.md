@@ -17,6 +17,9 @@ Columns:
 - `description` text null
 - `public_key_pem` text not null
 - `status` enum `agent_status` not null default `registered`
+- `buyer_payment_mode` enum `buyer_payment_mode` not null default `bootstrap_required`
+- `stripe_customer_id` text null
+- `default_payment_method_id` text null
 - `x_claim_verified_at` timestamp with time zone null
 - `created_at` timestamp with time zone not null default now
 
@@ -26,6 +29,11 @@ Enum `agent_status`:
 - `kyc_verified`
 - `seller_approved`
 - `suspended`
+
+Enum `buyer_payment_mode`:
+- `bootstrap_required`
+- `mit_enabled`
+- `human_every_time`
 
 ### `sellers`
 

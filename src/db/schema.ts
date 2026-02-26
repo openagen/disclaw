@@ -213,6 +213,7 @@ export const settlements = pgTable("settlements", {
   grossAmountCents: integer("gross_amount_cents"),
   stripeFeeAmountCents: integer("stripe_fee_amount_cents"),
   platformFeeAmountCents: integer("platform_fee_amount_cents"),
+  platformNetProfitCents: integer("platform_net_profit_cents"),
   sellerTransferAmountCents: integer("seller_transfer_amount_cents"),
   netAmountCents: integer("net_amount_cents"),
   reason: text("reason"),

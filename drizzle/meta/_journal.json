@@ -64,6 +64,13 @@
       "when": 1772080171494,
       "tag": "0008_brown_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772093712957,
+      "tag": "0009_thick_randall",
+      "breakpoints": true
     }
   ]
 }

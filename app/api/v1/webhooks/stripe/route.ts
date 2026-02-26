@@ -52,8 +52,27 @@ async function bindDefaultPaymentMethod(args: {
     await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
   } catch (error) {
     const e = error as { code?: string; message?: string };
-    // already attached (possibly to same customer) should not break flow
-    if (e.code !== "resource_already_exists" && !String(e.message ?? "").includes("already attached")) {
+    const msg = String(e.message ?? "");
+    const alreadyAttached =
+      e.code === "resource_already_exists" ||
+      msg.includes("already attached");
+    const attachedToDifferentCustomer =
+      msg.includes("belongs to a Customer") ||
+      msg.includes("attached to a Customer") ||
+      msg.includes("previously used without being attached");
+
+    if (attachedToDifferentCustomer) {
+      await db
+        .update(agents)
+        .set({
+          buyerPaymentMode: "human_every_time",
+          defaultPaymentMethodId: null
+        })
+        .where(eq(agents.id, args.buyerAgentId));
+      return;
+    }
+
+    if (!alreadyAttached) {
       throw error;
     }
   }

@@ -37,6 +37,16 @@ function toHumanAssist(orderId: string, pi: Stripe.PaymentIntent | null, reason:
   };
 }
 
+function toCheckoutAssist(orderId: string, session: Stripe.Checkout.Session, reason: string) {
+  return {
+    required: true,
+    reason,
+    checkout_session_id: session.id,
+    checkout_url: session.url,
+    message_template: `Order ${orderId} requires human checkout approval. Open the checkout link and finish payment authorization.`
+  };
+}
+
 function checkoutUrls(request: Request, orderId: string) {
   const origin = env.CLAWSHOP_BASE_URL ?? new URL(request.url).origin;
   return {
@@ -146,12 +156,27 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       await db.update(orders).set({ status: "paid" }).where(and(eq(orders.id, order.id), eq(orders.status, "created")));
     }
 
-    const humanAssist =
-      existing.status === "requires_action"
-        ? toHumanAssist(order.id, existing, "RISK_OR_AUTH_REQUIRED")
-        : existing.status === "requires_payment_method"
-          ? toHumanAssist(order.id, existing, "PAYMENT_METHOD_REQUIRED")
-          : null;
+    let humanAssist: ReturnType<typeof toHumanAssist> | ReturnType<typeof toCheckoutAssist> | null = null;
+    if (existing.status === "requires_action") {
+      humanAssist = toHumanAssist(order.id, existing, "RISK_OR_AUTH_REQUIRED");
+    } else if (existing.status === "requires_payment_method") {
+      const feeAmount = Math.round((Math.round(Number(order.amount) * 100) * env.PLATFORM_FEE_BPS) / 10000);
+      const session = await createHumanCheckoutSession({
+        orderId: order.id,
+        buyerAgentId: order.buyerAgentId,
+        buyerStripeCustomerId: await ensureBuyerCustomer({
+          id: buyer.id,
+          name: buyer.name,
+          stripeCustomerId: buyer.stripeCustomerId
+        }),
+        sellerAgentId: order.sellerAgentId,
+        amountCents: Math.round(Number(order.amount) * 100),
+        feeAmount,
+        sellerStripeAccountId: seller.stripeAccountId,
+        request
+      });
+      humanAssist = toCheckoutAssist(order.id, session, "PAYMENT_METHOD_REQUIRED");
+    }
 
     return ok({
       success: true,
@@ -217,14 +242,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         attempted: false,
         result: "human_checkout_required"
       },
-      human_assistance: {
-        required: true,
-        reason: buyerMode === "bootstrap_required" ? "FIRST_PAYMENT_REQUIRES_HUMAN_AUTH" : "HUMAN_POLICY_ENFORCED",
-        checkout_session_id: session.id,
-        checkout_url: session.url,
-        message_template:
-          `Order ${order.id} requires human checkout approval. Open the Stripe link and finish payment authorization.`
-      }
+      human_assistance: toCheckoutAssist(
+        order.id,
+        session,
+        buyerMode === "bootstrap_required" ? "FIRST_PAYMENT_REQUIRES_HUMAN_AUTH" : "HUMAN_POLICY_ENFORCED"
+      )
     });
   }
 
@@ -252,14 +274,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         attempted: false,
         result: "human_checkout_required_no_saved_method"
       },
-      human_assistance: {
-        required: true,
-        reason: "NO_SAVED_PAYMENT_METHOD",
-        checkout_session_id: session.id,
-        checkout_url: session.url,
-        message_template:
-          `Order ${order.id} needs a saved payment method for MIT. Open the checkout link and complete payment once.`
-      }
+      human_assistance: toCheckoutAssist(order.id, session, "NO_SAVED_PAYMENT_METHOD")
     });
   }
 
@@ -294,6 +309,27 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const pi = e.payment_intent ?? e.raw?.payment_intent ?? null;
       if (pi) {
         await db.update(orders).set({ stripePaymentIntentId: pi.id }).where(eq(orders.id, order.id));
+        const humanAssist =
+          pi.status === "requires_payment_method"
+            ? toCheckoutAssist(
+                order.id,
+                await createHumanCheckoutSession({
+                  orderId: order.id,
+                  buyerAgentId: order.buyerAgentId,
+                  buyerStripeCustomerId: await ensureBuyerCustomer({
+                    id: buyer.id,
+                    name: buyer.name,
+                    stripeCustomerId: buyer.stripeCustomerId
+                  }),
+                  sellerAgentId: order.sellerAgentId,
+                  amountCents,
+                  feeAmount,
+                  sellerStripeAccountId: seller.stripeAccountId,
+                  request
+                }),
+                "PAYMENT_METHOD_REQUIRED"
+              )
+            : toHumanAssist(order.id, pi, e.code ?? e.raw?.code ?? "MIT_CONFIRMATION_FAILED");
         return ok({
           success: true,
           payment_intent_id: pi.id,
@@ -304,7 +340,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             attempted: true,
             result: "human_assistance_required"
           },
-          human_assistance: toHumanAssist(order.id, pi, e.code ?? e.raw?.code ?? "MIT_CONFIRMATION_FAILED")
+          human_assistance: humanAssist
         });
       }
       return fail("PAYMENT_INTENT_CREATE_FAILED", e.message ?? "Unable to create payment intent", 502);
@@ -325,9 +361,22 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     paymentIntent.status === "requires_action"
       ? toHumanAssist(order.id, paymentIntent, "RISK_OR_AUTH_REQUIRED")
       : paymentIntent.status === "requires_payment_method"
-        ? toHumanAssist(
+        ? toCheckoutAssist(
             order.id,
-            paymentIntent,
+            await createHumanCheckoutSession({
+              orderId: order.id,
+              buyerAgentId: order.buyerAgentId,
+              buyerStripeCustomerId: await ensureBuyerCustomer({
+                id: buyer.id,
+                name: buyer.name,
+                stripeCustomerId: buyer.stripeCustomerId
+              }),
+              sellerAgentId: order.sellerAgentId,
+              amountCents,
+              feeAmount,
+              sellerStripeAccountId: seller.stripeAccountId,
+              request
+            }),
             parsed.data.payment_method_id ? "PAYMENT_RETRY_REQUIRED" : "PAYMENT_METHOD_REQUIRED"
           )
         : null;

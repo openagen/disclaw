@@ -58,6 +58,23 @@ Implement practical transitions as:
 Notes:
 1. Do not allow `auto_confirmed -> disputed` unless business rules explicitly reopen.
 2. Map settlement release trigger to `confirmed` and `auto_confirmed`.
+3. Payment retries on `created` orders must support fallback from stale/failed PI to human checkout URL.
+
+## Buyer Payment Mode (`agents.buyer_payment_mode`)
+
+Allowed transitions:
+1. `bootstrap_required -> mit_enabled` after first successful checkout/payment webhook.
+2. `mit_enabled -> human_every_time` on payment failure/checkout expiry or payment-method binding risk.
+3. `human_every_time -> mit_enabled` after next successful human checkout and payment-method binding.
+
+Policy:
+1. `bootstrap_required`: `/orders/:id/pay` must return `human_assistance.checkout_url`.
+2. `mit_enabled`: attempt MIT (`customer + payment_method + off_session + confirm`) first.
+3. `mit_enabled` with no saved method: fallback to `human_assistance.checkout_url`.
+4. `human_every_time`: always require human checkout.
+
+Operational note:
+1. When `requires_payment_method` appears on an existing PI, API should generate a fresh checkout URL instead of returning non-actionable state only.
 
 ## Confirmation Deadline Policy
 
@@ -91,3 +108,14 @@ Run at least every 15 minutes for claims:
    - `resolved_buyer` with refund/partial refund logic.
    - `resolved_seller` with release logic.
    - `rejected` if invalid claim.
+
+## Settlement Accounting Notes
+
+Persist both flow and profitability fields:
+1. `platform_fee_amount_cents` (application fee)
+2. `stripe_fee_amount_cents` (Stripe processing fee)
+3. `seller_transfer_amount_cents` (gross - platform fee for destination charge view)
+4. `platform_net_profit_cents = platform_fee_amount_cents - stripe_fee_amount_cents`
+
+Concurrency guard:
+1. Settlement capture must treat order-status update `0 rows affected` as conflict (`ORDER_STATUS_CONFLICT`), not success.

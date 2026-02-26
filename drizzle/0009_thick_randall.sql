@@ -1,0 +1,1 @@
+ALTER TABLE "settlements" ADD COLUMN "platform_net_profit_cents" integer;

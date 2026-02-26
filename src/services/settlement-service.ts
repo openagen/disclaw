@@ -16,6 +16,7 @@ type ReconcileData = {
   grossAmountCents: number | null;
   stripeFeeAmountCents: number | null;
   platformFeeAmountCents: number | null;
+  platformNetProfitCents: number | null;
   sellerTransferAmountCents: number | null;
   netAmountCents: number | null;
   stripeBalanceTransactionId: string | null;
@@ -48,6 +49,7 @@ async function reconcileFromPaymentIntent(intentId: string): Promise<ReconcileDa
   const gross = balanceTx?.amount ?? intent.amount ?? null;
   const stripeFee = balanceTx?.fee ?? null;
   const platformFee = intent.application_fee_amount ?? 0;
+  const platformNetProfit = stripeFee !== null ? platformFee - stripeFee : null;
   const sellerTransfer = gross !== null ? gross - platformFee : null;
   const net = balanceTx?.net ?? (gross !== null && stripeFee !== null ? gross - stripeFee : null);
 
@@ -56,6 +58,7 @@ async function reconcileFromPaymentIntent(intentId: string): Promise<ReconcileDa
     grossAmountCents: gross,
     stripeFeeAmountCents: stripeFee,
     platformFeeAmountCents: platformFee,
+    platformNetProfitCents: platformNetProfit,
     sellerTransferAmountCents: sellerTransfer,
     netAmountCents: net,
     stripeBalanceTransactionId: balanceTx?.id ?? null
@@ -81,6 +84,7 @@ async function reconcileFromRefund(refundId: string): Promise<ReconcileData> {
     grossAmountCents: gross,
     stripeFeeAmountCents: stripeFee,
     platformFeeAmountCents: null,
+    platformNetProfitCents: null,
     sellerTransferAmountCents: null,
     netAmountCents: net,
     stripeBalanceTransactionId: balanceTx?.id ?? null
@@ -111,6 +115,7 @@ export async function settleOrderCapture(
       grossAmountCents: reconcile.grossAmountCents,
       stripeFeeAmountCents: reconcile.stripeFeeAmountCents,
       platformFeeAmountCents: reconcile.platformFeeAmountCents,
+      platformNetProfitCents: reconcile.platformNetProfitCents,
       sellerTransferAmountCents: reconcile.sellerTransferAmountCents,
       netAmountCents: reconcile.netAmountCents
     });
@@ -126,6 +131,7 @@ export async function settleOrderCapture(
       grossAmountCents: reconcile.grossAmountCents,
       stripeFeeAmountCents: reconcile.stripeFeeAmountCents,
       platformFeeAmountCents: reconcile.platformFeeAmountCents,
+      platformNetProfitCents: reconcile.platformNetProfitCents,
       sellerTransferAmountCents: reconcile.sellerTransferAmountCents,
       netAmountCents: reconcile.netAmountCents,
       reason: "already_captured"
@@ -134,10 +140,13 @@ export async function settleOrderCapture(
     return { ok: false, reason: `UNEXPECTED_INTENT_STATUS:${intent.status}` };
   }
 
-  await db
+  const updated = await db
     .update(orders)
     .set({ status: targetStatus })
     .where(and(eq(orders.id, order.id), eq(orders.status, order.status)));
+  if (updated.rowCount === 0) {
+    return { ok: false, reason: "ORDER_STATUS_CONFLICT" };
+  }
 
   return { ok: true };
 }
@@ -166,6 +175,7 @@ export async function settleOrderRefund(orderId: string, reason: string) {
       grossAmountCents: gross,
       stripeFeeAmountCents: 0,
       platformFeeAmountCents: platformFee,
+      platformNetProfitCents: platformFee,
       sellerTransferAmountCents: gross !== null ? gross - platformFee : null,
       netAmountCents: gross,
       reason
@@ -194,6 +204,7 @@ export async function settleOrderRefund(orderId: string, reason: string) {
       grossAmountCents: reconcile.grossAmountCents,
       stripeFeeAmountCents: reconcile.stripeFeeAmountCents,
       platformFeeAmountCents: reconcile.platformFeeAmountCents,
+      platformNetProfitCents: reconcile.platformNetProfitCents,
       sellerTransferAmountCents: reconcile.sellerTransferAmountCents,
       netAmountCents: reconcile.netAmountCents,
       reason

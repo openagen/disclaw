@@ -8,6 +8,71 @@ import { markKycVerifiedByStripeAccount } from "@/services/seller-service";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+async function ensureAgentCustomer(agentId: string) {
+  const [agent] = await db
+    .select({
+      id: agents.id,
+      name: agents.name,
+      stripeCustomerId: agents.stripeCustomerId
+    })
+    .from(agents)
+    .where(eq(agents.id, agentId))
+    .limit(1);
+  if (!agent) return null;
+  if (agent.stripeCustomerId) return agent.stripeCustomerId;
+
+  const customer = await stripe.customers.create({
+    name: agent.name,
+    metadata: {
+      agent_id: agent.id
+    }
+  });
+  await db.update(agents).set({ stripeCustomerId: customer.id }).where(eq(agents.id, agent.id));
+  return customer.id;
+}
+
+async function bindDefaultPaymentMethod(args: {
+  buyerAgentId: string;
+  paymentIntentId: string;
+  fallbackCustomerId?: string | null;
+}) {
+  const pi = await stripe.paymentIntents.retrieve(args.paymentIntentId);
+  const paymentMethodId = typeof pi.payment_method === "string" ? pi.payment_method : null;
+  if (!paymentMethodId) return;
+
+  const customerId =
+    (typeof pi.customer === "string" ? pi.customer : null) ??
+    args.fallbackCustomerId ??
+    (await ensureAgentCustomer(args.buyerAgentId));
+  if (!customerId) return;
+
+  await db.update(agents).set({ stripeCustomerId: customerId }).where(eq(agents.id, args.buyerAgentId));
+
+  try {
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
+  } catch (error) {
+    const e = error as { code?: string; message?: string };
+    // already attached (possibly to same customer) should not break flow
+    if (e.code !== "resource_already_exists" && !String(e.message ?? "").includes("already attached")) {
+      throw error;
+    }
+  }
+
+  await stripe.customers.update(customerId, {
+    invoice_settings: {
+      default_payment_method: paymentMethodId
+    }
+  });
+
+  await db
+    .update(agents)
+    .set({
+      buyerPaymentMode: "mit_enabled",
+      defaultPaymentMethodId: paymentMethodId
+    })
+    .where(eq(agents.id, args.buyerAgentId));
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
@@ -60,7 +125,10 @@ export async function POST(request: Request) {
         .where(eq(orders.stripePaymentIntentId, paymentIntent.id))
         .limit(1);
       if (order) {
-        await db.update(agents).set({ buyerPaymentMode: "mit_enabled" }).where(eq(agents.id, order.buyerAgentId));
+        await bindDefaultPaymentMethod({
+          buyerAgentId: order.buyerAgentId,
+          paymentIntentId: paymentIntent.id
+        });
       }
       break;
     }
@@ -76,7 +144,10 @@ export async function POST(request: Request) {
         .where(eq(orders.stripePaymentIntentId, paymentIntent.id))
         .limit(1);
       if (order) {
-        await db.update(agents).set({ buyerPaymentMode: "mit_enabled" }).where(eq(agents.id, order.buyerAgentId));
+        await bindDefaultPaymentMethod({
+          buyerAgentId: order.buyerAgentId,
+          paymentIntentId: paymentIntent.id
+        });
       }
       break;
     }
@@ -113,7 +184,11 @@ export async function POST(request: Request) {
         })
         .where(eq(orders.id, order.id));
 
-      await db.update(agents).set({ buyerPaymentMode: "mit_enabled" }).where(eq(agents.id, order.buyerAgentId));
+      await bindDefaultPaymentMethod({
+        buyerAgentId: order.buyerAgentId,
+        paymentIntentId,
+        fallbackCustomerId: typeof session.customer === "string" ? session.customer : null
+      });
       break;
     }
     case "checkout.session.expired": {

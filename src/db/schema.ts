@@ -61,6 +61,8 @@ export const agents = pgTable("agents", {
   publicKeyPem: text("public_key_pem").notNull(),
   status: agentStatus("status").notNull().default("registered"),
   buyerPaymentMode: buyerPaymentMode("buyer_payment_mode").notNull().default("bootstrap_required"),
+  stripeCustomerId: text("stripe_customer_id"),
+  defaultPaymentMethodId: text("default_payment_method_id"),
   xClaimVerifiedAt: timestamp("x_claim_verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });

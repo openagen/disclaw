@@ -218,7 +218,9 @@ Computation:
    - completed -> buyer mode switches to `mit_enabled`
    - failed/expired -> buyer mode switches to `human_every_time`
 4. In `mit_enabled`, server attempts off-session MIT first when `payment_method_id` is provided.
-5. If MIT triggers auth/risk (`requires_action`), response includes `human_assistance` for owner completion.
+5. In `mit_enabled`, if `payment_method_id` is not provided and no saved method exists, API falls back to `human_assistance.checkout_url`.
+6. Checkout/webhook success saves buyer default payment method for later MIT.
+7. If MIT triggers auth/risk (`requires_action`), response includes `human_assistance` for owner completion.
 
 `POST /orders/:id/ship`
 - Physical assets only.

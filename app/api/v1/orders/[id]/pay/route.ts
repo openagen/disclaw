@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { orders, sellers } from "@/db/schema";
+import { agents, orders, sellers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireAgent } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -43,6 +43,69 @@ function checkoutUrls(request: Request, orderId: string) {
     successUrl: `${origin}/payment/return?order_id=${orderId}&payment=success`,
     cancelUrl: `${origin}/payment/return?order_id=${orderId}&payment=cancelled`
   };
+}
+
+async function createHumanCheckoutSession(args: {
+  orderId: string;
+  buyerAgentId: string;
+  buyerStripeCustomerId: string | null;
+  sellerAgentId: string;
+  amountCents: number;
+  feeAmount: number;
+  sellerStripeAccountId: string;
+  request: Request;
+}) {
+  const urls = checkoutUrls(args.request, args.orderId);
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    success_url: urls.successUrl,
+    cancel_url: urls.cancelUrl,
+    customer: args.buyerStripeCustomerId ?? undefined,
+    metadata: {
+      order_id: args.orderId,
+      buyer_agent_id: args.buyerAgentId,
+      seller_agent_id: args.sellerAgentId
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          product_data: { name: `ClawShopping Order ${args.orderId.slice(0, 8)}` },
+          unit_amount: args.amountCents
+        }
+      }
+    ],
+    payment_intent_data: {
+      capture_method: "manual",
+      setup_future_usage: "off_session",
+      application_fee_amount: args.feeAmount,
+      transfer_data: {
+        destination: args.sellerStripeAccountId
+      },
+      metadata: {
+        order_id: args.orderId,
+        buyer_agent_id: args.buyerAgentId,
+        seller_agent_id: args.sellerAgentId
+      }
+    }
+  });
+
+  return session;
+}
+
+async function ensureBuyerCustomer(agent: { id: string; name: string; stripeCustomerId: string | null }) {
+  if (agent.stripeCustomerId) return agent.stripeCustomerId;
+
+  const customer = await stripe.customers.create({
+    name: agent.name,
+    metadata: {
+      agent_id: agent.id
+    }
+  });
+
+  await db.update(agents).set({ stripeCustomerId: customer.id }).where(eq(agents.id, agent.id));
+  return customer.id;
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -131,38 +194,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   };
 
   if (buyerMode === "bootstrap_required" || buyerMode === "human_every_time") {
-    const urls = checkoutUrls(request, order.id);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      success_url: urls.successUrl,
-      cancel_url: urls.cancelUrl,
-      metadata: {
-        order_id: order.id,
-        buyer_agent_id: order.buyerAgentId,
-        seller_agent_id: order.sellerAgentId
-      },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            product_data: { name: `ClawShopping Order ${order.id.slice(0, 8)}` },
-            unit_amount: amountCents
-          }
-        }
-      ],
-      payment_intent_data: {
-        capture_method: "manual",
-        application_fee_amount: feeAmount,
-        transfer_data: {
-          destination: seller.stripeAccountId
-        },
-        metadata: {
-          order_id: order.id,
-          buyer_agent_id: order.buyerAgentId,
-          seller_agent_id: order.sellerAgentId
-        }
-      }
+    const session = await createHumanCheckoutSession({
+      orderId: order.id,
+      buyerAgentId: order.buyerAgentId,
+      buyerStripeCustomerId: await ensureBuyerCustomer({
+        id: buyer.id,
+        name: buyer.name,
+        stripeCustomerId: buyer.stripeCustomerId
+      }),
+      sellerAgentId: order.sellerAgentId,
+      amountCents,
+      feeAmount,
+      sellerStripeAccountId: seller.stripeAccountId,
+      request
     });
 
     return ok({
@@ -184,13 +228,55 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     });
   }
 
-  if (parsed.data.mit_preferred && parsed.data.payment_method_id) {
+  const mitPaymentMethodId = parsed.data.payment_method_id ?? buyer.defaultPaymentMethodId ?? null;
+  if (parsed.data.mit_preferred && !mitPaymentMethodId) {
+    const session = await createHumanCheckoutSession({
+      orderId: order.id,
+      buyerAgentId: order.buyerAgentId,
+      buyerStripeCustomerId: await ensureBuyerCustomer({
+        id: buyer.id,
+        name: buyer.name,
+        stripeCustomerId: buyer.stripeCustomerId
+      }),
+      sellerAgentId: order.sellerAgentId,
+      amountCents,
+      feeAmount,
+      sellerStripeAccountId: seller.stripeAccountId,
+      request
+    });
+    return ok({
+      success: true,
+      status: "requires_human_checkout",
+      mit: {
+        preferred: true,
+        attempted: false,
+        result: "human_checkout_required_no_saved_method"
+      },
+      human_assistance: {
+        required: true,
+        reason: "NO_SAVED_PAYMENT_METHOD",
+        checkout_session_id: session.id,
+        checkout_url: session.url,
+        message_template:
+          `Order ${order.id} needs a saved payment method for MIT. Open the checkout link and complete payment once.`
+      }
+    });
+  }
+
+  if (parsed.data.mit_preferred && mitPaymentMethodId) {
     mitAttempted = true;
     try {
+      const customerId = await ensureBuyerCustomer({
+        id: buyer.id,
+        name: buyer.name,
+        stripeCustomerId: buyer.stripeCustomerId
+      });
+
       paymentIntent = await stripe.paymentIntents.create(
         {
           ...payload,
-          payment_method: parsed.data.payment_method_id,
+          customer: customerId,
+          payment_method: mitPaymentMethodId,
           confirm: true,
           off_session: true
         },

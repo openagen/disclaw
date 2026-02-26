@@ -51,3 +51,34 @@ export async function markKycVerifiedByStripeAccount(accountId: string) {
 
   await db.update(agents).set({ status: "kyc_verified" }).where(eq(agents.id, seller.agentId));
 }
+
+export async function checkAndUpdateKycStatus() {
+  const pendingAgents = await db.select().from(agents).where(eq(agents.status, "pending_kyc"));
+
+  let checked = 0;
+  let updated = 0;
+
+  for (const agent of pendingAgents) {
+    checked += 1;
+
+    const [seller] = await db.select().from(sellers).where(eq(sellers.agentId, agent.id)).limit(1);
+    if (!seller || !seller.stripeAccountId) {
+      continue;
+    }
+
+    try {
+      const account = await stripe.accounts.retrieve(seller.stripeAccountId);
+
+      // Check if KYC is verified (both charges and payouts enabled)
+      if (account.charges_enabled && account.payouts_enabled) {
+        await db.update(agents).set({ status: "kyc_verified" }).where(eq(agents.id, agent.id));
+        updated += 1;
+      }
+    } catch (error) {
+      // Log error but continue processing other agents
+      console.error(`Failed to check Stripe account ${seller.stripeAccountId}:`, error);
+    }
+  }
+
+  return { checked, updated };
+}

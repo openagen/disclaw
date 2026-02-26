@@ -145,6 +145,11 @@ export async function settleOrderCapture(
     .set({ status: targetStatus })
     .where(and(eq(orders.id, order.id), eq(orders.status, order.status)));
   if (updated.rowCount === 0) {
+    // Webhook may transition the order to target status before this update.
+    const latest = await getOrder(order.id);
+    if (latest?.status === targetStatus) {
+      return { ok: true, reason: "ALREADY_AT_TARGET_STATUS" };
+    }
     return { ok: false, reason: "ORDER_STATUS_CONFLICT" };
   }
 

@@ -9,7 +9,7 @@ LOG_FILE="logs/stripe-kyc-check-daemon.log"
 PID_FILE="logs/stripe-kyc-check-daemon.pid"
 
 API_URL="http://localhost:3000/api/internal/cron/stripe/check-kyc"
-CRON_SECRET="3db9691f15e2aff78ccc796aba2f0fc3793b52ca151ce72775eb6f3d97231f37"
+CRON_SECRET="c23a3d0cbb265f71cbd67111327126afe16735bea8a6d758fdb8982ffe5ad665"
 CHECK_INTERVAL=60
 
 # 创建日志目录

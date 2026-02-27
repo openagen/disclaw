@@ -39,7 +39,7 @@ export async function requireAgent(request: WithHeaders) {
 
   const cloned = request.clone();
   const rawBody = await cloned.text().catch(() => "");
-  const bodyHash = sha256Hex(rawBody);
+  const bodyHash = rawBody === "" ? undefined : sha256Hex(rawBody);
   const path = new URL(request.url).pathname;
   const payload = buildSigningPayload({
     method: request.method,

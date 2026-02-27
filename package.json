@@ -15,14 +15,15 @@
     "test:e2e": "node scripts/test-e2e.js",
     "test:stripe-real": "node scripts/test-stripe-real.js",
     "test:x-claim-real": "node scripts/test-x-claim-real.js",
-    "test:buyer-real-pay": "node scripts/test-buyer-real-pay.js"
+    "test:buyer-real-pay": "node scripts/test-buyer-real-pay.js",
+    "approve:seller": "node scripts/approve-seller.js"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.43.1",
-    "next": "16.0.0",
+    "next": "16.1.6",
     "pg": "^8.16.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",

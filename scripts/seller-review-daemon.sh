@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# X Claim 验证守护进程
-# 每60秒检查一次待验证的 claims
+# 卖家审核守护进程
+# 每60秒检查一次 pending 状态的卖家并自动审核通过
 
 cd /root/clawshopping
 
-LOG_FILE="logs/x-claim-verify-daemon.log"
-PID_FILE="logs/x-claim-verify-daemon.pid"
+LOG_FILE="logs/seller-review-daemon.log"
+PID_FILE="logs/seller-review-daemon.pid"
 
-API_URL="http://localhost:3000/api/internal/cron/claims/verify-x"
-CRON_SECRET="c23a3d0cbb265f71cbd67111327126afe16735bea8a6d758fdb8982ffe5ad665"
 CHECK_INTERVAL=60
 
 # 创建日志目录
@@ -30,11 +28,11 @@ fi
 # 保存当前进程 PID
 echo $$ > "$PID_FILE"
 
-echo "$(date): X claim verify daemon started" >> "$LOG_FILE"
+echo "$(date): Seller review daemon started" >> "$LOG_FILE"
 
 # 清理函数
 cleanup() {
-    echo "$(date): X claim verify daemon stopped" >> "$LOG_FILE"
+    echo "$(date): Seller review daemon stopped" >> "$LOG_FILE"
     rm -f "$PID_FILE"
     exit 0
 }
@@ -45,11 +43,8 @@ trap cleanup SIGTERM SIGINT
 # 主循环
 while true; do
     TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-    RESPONSE=$(curl -s -X POST "$API_URL" \
-        -H "Authorization: Bearer $CRON_SECRET" \
-        -H "Content-Type: application/json")
-
-    echo "[$TIMESTAMP] $RESPONSE" >> "$LOG_FILE"
+    OUTPUT=$(node scripts/approve-seller.js 2>&1)
+    echo "[$TIMESTAMP] $OUTPUT" >> "$LOG_FILE"
 
     sleep $CHECK_INTERVAL
 done

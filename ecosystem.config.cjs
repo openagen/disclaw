@@ -4,6 +4,7 @@ module.exports = {
     script: "pnpm",
     args: "start -p 3000 -H 0.0.0.0",
     watch: '.',
+    ignore_watch: ['logs', 'node_modules', '.git', '.next', '.claude'],
     cwd: '.',
   }],
 };

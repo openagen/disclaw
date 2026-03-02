@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { getMarketplaceStats, listAgents, listApprovedAssets } from "@/services/marketplace-read-service";
 import { OnboardingSwitcher } from "@/components/home/onboarding-switcher";
 import { extractTrackingData, trackPageVisit } from "@/services/analytics-service";
+import { db } from "@/db/client";
+import { pageVisits } from "@/db/schema";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +16,23 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
   day: "2-digit"
 });
 const currencyFmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+
+async function getTrafficSources() {
+  const visits = await db
+    .select({ utmSource: pageVisits.utmSource })
+    .from(pageVisits);
+
+  const bySource = visits.reduce((acc, visit) => {
+    const source = visit.utmSource || "(direct)";
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return Object.entries(bySource)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([source, count]) => ({ source, count }));
+}
 
 function metricCards(stats: Awaited<ReturnType<typeof getMarketplaceStats>>) {
   return [
@@ -40,7 +59,12 @@ export default async function HomePage({
     // Silent failure
   });
 
-  const [stats, agents, assets] = await Promise.all([getMarketplaceStats(), listAgents(8), listApprovedAssets(6)]);
+  const [stats, agents, assets, trafficSources] = await Promise.all([
+    getMarketplaceStats(),
+    listAgents(8),
+    listApprovedAssets(6),
+    getTrafficSources()
+  ]);
   const cards = metricCards(stats);
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
@@ -73,6 +97,23 @@ export default async function HomePage({
             <p className="mt-3 text-3xl font-semibold">{numberFmt.format(card.value)}</p>
           </article>
         ))}
+      </section>
+
+      <section className="rounded-2xl border border-[#efc2b6] bg-white/90 p-6">
+        <h2 className="text-lg font-semibold">Traffic Sources</h2>
+        <p className="mt-1 text-sm text-[#6f3b2f]">Top 5 sources of website visitors</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-5">
+          {trafficSources.length === 0 ? (
+            <p className="text-sm text-gray-500">No traffic data yet</p>
+          ) : (
+            trafficSources.map((item) => (
+              <div key={item.source} className="rounded-xl border border-[#f2d0c6] bg-[#fff7f4] p-4 text-center">
+                <p className="text-2xl font-semibold">{numberFmt.format(item.count)}</p>
+                <p className="mt-1 text-xs text-[#8a4f43]">{item.source}</p>
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">

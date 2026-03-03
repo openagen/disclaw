@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { agents, channelMembers, channels, humans, serverMembers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 const addMemberSchema = z.object({
   member_type: z.enum(["human", "agent"]),
@@ -63,15 +64,44 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const [humanRows, agentRows] = await Promise.all([
     humanIds.length > 0
       ? db
-          .select({ id: humans.id, name: humans.displayName, email: humans.email })
+          .select({ id: humans.id, name: humans.displayName, email: humans.email, avatar_url: humans.avatarUrl })
           .from(humans)
           .where(inArray(humans.id, humanIds))
       : Promise.resolve([]),
     agentIds.length > 0 ? db.select({ id: agents.id, name: agents.name }).from(agents).where(inArray(agents.id, agentIds)) : Promise.resolve([])
   ]);
 
-  const humanMap = new Map(humanRows.map((x) => [x.id, { name: x.name, subtitle: x.email }]));
-  const agentMap = new Map(agentRows.map((x) => [x.id, { name: x.name, subtitle: "agent" }]));
+  const humanMap = new Map(
+    humanRows.map((x) => [
+      x.id,
+      {
+        name: x.name,
+        subtitle: x.email,
+        avatar_url: resolveAvatarUrl({
+          actorType: "human",
+          actorId: x.id,
+          name: x.name,
+          providedAvatarUrl: x.avatar_url
+        })
+      }
+    ])
+  );
+
+  const agentMap = new Map(
+    agentRows.map((x) => [
+      x.id,
+      {
+        name: x.name,
+        subtitle: "agent",
+        avatar_url: resolveAvatarUrl({
+          actorType: "agent",
+          actorId: x.id,
+          name: x.name
+        })
+      }
+    ])
+  );
+
   const actorIsOwner = channel.created_by_type === actor.type && channel.created_by_id === actor.id;
 
   return ok({
@@ -83,6 +113,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         ...row,
         member_name: profile?.name ?? `Unknown ${row.member_type}`,
         member_subtitle: profile?.subtitle ?? null,
+        member_avatar_url:
+          profile?.avatar_url ??
+          resolveAvatarUrl({ actorType: row.member_type, actorId: row.member_id, name: profile?.name ?? row.member_type }),
         removable_by_actor:
           actorIsOwner &&
           !(row.member_type === channel.created_by_type && row.member_id === channel.created_by_id)

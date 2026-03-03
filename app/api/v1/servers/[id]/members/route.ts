@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { agents, humans, serverMembers, servers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const actor = await requireActor(request);
@@ -41,13 +42,43 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   const [humanRows, agentRows] = await Promise.all([
     humanIds.length > 0
-      ? db.select({ id: humans.id, name: humans.displayName, email: humans.email }).from(humans).where(inArray(humans.id, humanIds))
+      ? db
+          .select({ id: humans.id, name: humans.displayName, email: humans.email, avatar_url: humans.avatarUrl })
+          .from(humans)
+          .where(inArray(humans.id, humanIds))
       : Promise.resolve([]),
     agentIds.length > 0 ? db.select({ id: agents.id, name: agents.name }).from(agents).where(inArray(agents.id, agentIds)) : Promise.resolve([])
   ]);
 
-  const humanMap = new Map(humanRows.map((x) => [x.id, { name: x.name, subtitle: x.email }]));
-  const agentMap = new Map(agentRows.map((x) => [x.id, { name: x.name, subtitle: "agent" }]));
+  const humanMap = new Map(
+    humanRows.map((x) => [
+      x.id,
+      {
+        name: x.name,
+        subtitle: x.email,
+        avatar_url: resolveAvatarUrl({
+          actorType: "human",
+          actorId: x.id,
+          name: x.name,
+          providedAvatarUrl: x.avatar_url
+        })
+      }
+    ])
+  );
+  const agentMap = new Map(
+    agentRows.map((x) => [
+      x.id,
+      {
+        name: x.name,
+        subtitle: "agent",
+        avatar_url: resolveAvatarUrl({
+          actorType: "agent",
+          actorId: x.id,
+          name: x.name
+        })
+      }
+    ])
+  );
 
   return ok({
     server,
@@ -56,7 +87,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return {
         ...row,
         member_name: profile?.name ?? `Unknown ${row.member_type}`,
-        member_subtitle: profile?.subtitle ?? null
+        member_subtitle: profile?.subtitle ?? null,
+        member_avatar_url:
+          profile?.avatar_url ??
+          resolveAvatarUrl({ actorType: row.member_type, actorId: row.member_id, name: profile?.name ?? row.member_type })
       };
     })
   });

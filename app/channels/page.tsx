@@ -9,6 +9,7 @@ type HumanMe = {
   id: string;
   email: string;
   display_name: string;
+  avatar_url: string;
 };
 
 type Server = {
@@ -37,6 +38,7 @@ type Message = {
   sender_type: "human" | "agent";
   sender_id: string;
   sender_name: string;
+  sender_avatar_url: string;
   content: string;
   created_at: string;
 };
@@ -46,6 +48,7 @@ type Candidate = {
   id: string;
   name: string;
   subtitle: string;
+  avatar_url: string;
 };
 
 type ChannelMember = {
@@ -54,6 +57,7 @@ type ChannelMember = {
   member_id: string;
   member_name: string;
   member_subtitle: string | null;
+  member_avatar_url: string;
   joined_at: string;
   removable_by_actor: boolean;
 };
@@ -64,6 +68,7 @@ type ServerMember = {
   member_id: string;
   member_name: string;
   member_subtitle: string | null;
+  member_avatar_url: string;
   joined_at: string;
 };
 
@@ -140,7 +145,8 @@ export default function ChannelsPage() {
         type: member.member_type,
         id: member.member_id,
         name: member.member_name,
-        subtitle: member.member_subtitle ?? member.member_type
+        subtitle: member.member_subtitle ?? member.member_type,
+        avatar_url: member.member_avatar_url
       })),
     [serverMembers]
   );
@@ -921,7 +927,10 @@ export default function ChannelsPage() {
               </h1>
             </div>
             <div className="text-right">
-              <p className="text-sm text-[#d8dff5]">{me.display_name}</p>
+              <div className="flex items-center gap-2">
+                <img src={me.avatar_url} alt={me.display_name} className="h-7 w-7 rounded-full border border-[#3b4256]" />
+                <p className="text-sm text-[#d8dff5]">{me.display_name}</p>
+              </div>
               <button type="button" onClick={handleLogout} className="text-xs text-[#9ea9c5] hover:text-[#d5dcf1]">
                 Log out
               </button>
@@ -938,12 +947,15 @@ export default function ChannelsPage() {
                 {messages.map((message) => (
                   <article key={message.id} className="rounded-xl border border-[#2a303f] bg-[#171c25] px-3 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-[#e8edff]">
-                        {message.sender_name}
-                        <span className="ml-2 rounded-md bg-[#293147] px-1.5 py-0.5 text-[10px] uppercase text-[#b8c3e6]">
-                          {message.sender_type}
-                        </span>
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <img src={message.sender_avatar_url} alt={message.sender_name} className="h-8 w-8 rounded-full border border-[#3b4256]" />
+                        <p className="text-sm font-medium text-[#e8edff]">
+                          {message.sender_name}
+                          <span className="ml-2 rounded-md bg-[#293147] px-1.5 py-0.5 text-[10px] uppercase text-[#b8c3e6]">
+                            {message.sender_type}
+                          </span>
+                        </p>
+                      </div>
                       <p className="text-xs text-[#8b94a9]">{fmtTime.format(new Date(message.created_at))}</p>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-[#d0d8ec]">{message.content}</p>
@@ -1018,12 +1030,15 @@ export default function ChannelsPage() {
                 members.map((member) => (
                   <article key={member.id} className="rounded-xl border border-[#32384a] bg-[#121720] px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <div>
+                      <div className="flex items-center gap-2">
+                        <img src={member.member_avatar_url} alt={member.member_name} className="h-7 w-7 rounded-full border border-[#3b4256]" />
+                        <div>
                         <p className="text-sm text-[#e4eaff]">{member.member_name}</p>
                         <p className="text-xs text-[#9099b1]">
                           {member.member_type}
                           {member.member_subtitle ? ` · ${member.member_subtitle}` : ""}
                         </p>
+                        </div>
                       </div>
                       {member.removable_by_actor ? (
                         <button

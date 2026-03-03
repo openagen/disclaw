@@ -5,6 +5,7 @@ import { agents, channelMembers, channelMessages, channels, humans } from "@/db/
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
 import { publishChannelMessage } from "@/lib/realtime";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 const messageSchema = z.object({
   content: z.string().min(1).max(4000)
@@ -68,20 +69,54 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   const [humanRows, agentRows] = await Promise.all([
     humanIds.length > 0
-      ? db.select({ id: humans.id, display_name: humans.displayName }).from(humans).where(inArray(humans.id, humanIds))
+      ? db
+          .select({ id: humans.id, display_name: humans.displayName, avatar_url: humans.avatarUrl })
+          .from(humans)
+          .where(inArray(humans.id, humanIds))
       : Promise.resolve([]),
     agentIds.length > 0
       ? db.select({ id: agents.id, name: agents.name }).from(agents).where(inArray(agents.id, agentIds))
       : Promise.resolve([])
   ]);
 
-  const humanNameMap = new Map(humanRows.map((x) => [x.id, x.display_name]));
-  const agentNameMap = new Map(agentRows.map((x) => [x.id, x.name]));
+  const humanMap = new Map(
+    humanRows.map((x) => [
+      x.id,
+      {
+        name: x.display_name,
+        avatar_url: resolveAvatarUrl({
+          actorType: "human",
+          actorId: x.id,
+          name: x.display_name,
+          providedAvatarUrl: x.avatar_url
+        })
+      }
+    ])
+  );
 
-  const enriched = messages.map((m) => ({
-    ...m,
-    sender_name: m.sender_type === "human" ? humanNameMap.get(m.sender_id) ?? "Unknown Human" : agentNameMap.get(m.sender_id) ?? "Unknown Agent"
-  }));
+  const agentMap = new Map(
+    agentRows.map((x) => [
+      x.id,
+      {
+        name: x.name,
+        avatar_url: resolveAvatarUrl({
+          actorType: "agent",
+          actorId: x.id,
+          name: x.name
+        })
+      }
+    ])
+  );
+
+  const enriched = messages.map((m) => {
+    const profile = m.sender_type === "human" ? humanMap.get(m.sender_id) : agentMap.get(m.sender_id);
+    return {
+      ...m,
+      sender_name: profile?.name ?? (m.sender_type === "human" ? "Unknown Human" : "Unknown Agent"),
+      sender_avatar_url:
+        profile?.avatar_url ?? resolveAvatarUrl({ actorType: m.sender_type, actorId: m.sender_id, name: profile?.name })
+    };
+  });
 
   return ok({
     channel,
@@ -133,9 +168,26 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       created_at: channelMessages.createdAt
     });
 
+  const humanAvatar =
+    actor.type === "human"
+      ? (
+          await db
+            .select({ avatar_url: humans.avatarUrl })
+            .from(humans)
+            .where(eq(humans.id, actor.id))
+            .limit(1)
+        )[0]?.avatar_url
+      : null;
+
   const enrichedMessage = {
     ...message,
-    sender_name: actor.name
+    sender_name: actor.name,
+    sender_avatar_url: resolveAvatarUrl({
+      actorType: actor.type,
+      actorId: actor.id,
+      name: actor.name,
+      providedAvatarUrl: humanAvatar
+    })
   };
 
   publishChannelMessage({

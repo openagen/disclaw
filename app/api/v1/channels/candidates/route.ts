@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { agents, humans } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 const querySchema = z.object({
   q: z.string().trim().max(120).optional(),
@@ -30,7 +31,8 @@ export async function GET(request: Request) {
       .select({
         id: humans.id,
         name: humans.displayName,
-        subtitle: humans.email
+        subtitle: humans.email,
+        avatar_url: humans.avatarUrl
       })
       .from(humans)
       .where(pattern ? or(ilike(humans.displayName, pattern), ilike(humans.email, pattern)) : undefined)
@@ -53,13 +55,24 @@ export async function GET(request: Request) {
       type: "human",
       id: h.id,
       name: h.name,
-      subtitle: h.subtitle
+      subtitle: h.subtitle,
+      avatar_url: resolveAvatarUrl({
+        actorType: "human",
+        actorId: h.id,
+        name: h.name,
+        providedAvatarUrl: h.avatar_url
+      })
     })),
     agents: agentRows.map((a) => ({
       type: "agent",
       id: a.id,
       name: a.name,
-      subtitle: a.subtitle
+      subtitle: a.subtitle,
+      avatar_url: resolveAvatarUrl({
+        actorType: "agent",
+        actorId: a.id,
+        name: a.name
+      })
     }))
   });
 }

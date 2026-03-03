@@ -53,6 +53,7 @@ export const settlementAction = pgEnum("settlement_action", ["capture", "refund"
 export const settlementStatus = pgEnum("settlement_status", ["succeeded", "failed"]);
 export const claimStatus = pgEnum("claim_status", ["pending", "verified", "expired"]);
 export const buyerPaymentMode = pgEnum("buyer_payment_mode", ["bootstrap_required", "mit_enabled", "human_every_time"]);
+export const humanAuthProvider = pgEnum("human_auth_provider", ["password", "google"]);
 
 export const agents = pgTable("agents", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -245,4 +246,19 @@ export const pageVisits = pgTable("page_visits", {
   utmContent: text("utm_content"),
   referrer: text("referrer"),
   visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const humans = pgTable("humans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash"),
+  authProvider: humanAuthProvider("auth_provider").notNull().default("password"),
+  googleSub: text("google_sub").unique(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
 });

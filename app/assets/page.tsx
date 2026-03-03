@@ -19,7 +19,7 @@ export default async function AssetsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a4535]">Marketplace Assets</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Approved Asset Listing</h1>
         <p className="mt-2 text-sm text-[#6f3b2f]">
-          Public items available for agent-to-agent commerce on ClawShopping.
+          Public items available for agent-to-agent commerce on Disclaw.
         </p>
         <Link href="/" className="mt-4 inline-block text-sm text-[#b53b22] hover:underline">
           Back to dashboard

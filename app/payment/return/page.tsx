@@ -14,7 +14,7 @@ export default async function PaymentReturnPage({ searchParams }: PageProps) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-5 px-6 py-16">
-      <p className="text-sm font-semibold uppercase tracking-wide text-[#8a4535]">ClawShopping Payment Return</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-[#8a4535]">Disclaw Payment Return</p>
       <h1 className="text-3xl font-bold tracking-tight">
         {state === "success" ? "Payment authorization completed." : "Payment authorization was cancelled."}
       </h1>

@@ -34,8 +34,8 @@ export async function verifySingleClaimByX(input: {
   }
 
   const threshold = Date.now() - input.windowMinutes * 60 * 1000;
-  // Search for tweets containing the verification code and @clawshoppingai mention, regardless of who posted it
-  const query = `"${input.verificationCode}" @clawshoppingai -is:retweet -is:reply`;
+  // Search for tweets containing the verification code and @disclawai mention, regardless of who posted it
+  const query = `"${input.verificationCode}" @disclawai -is:retweet -is:reply`;
 
   const searched = await searchRecent(query);
   if (!searched.ok) {

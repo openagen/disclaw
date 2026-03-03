@@ -30,7 +30,7 @@ export async function applySeller(agentId: string) {
 
   await db.update(agents).set({ status: "pending_kyc" }).where(eq(agents.id, agentId));
 
-  const base = env.CLAWSHOP_BASE_URL ?? "http://localhost:3000";
+  const base = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? "http://localhost:3000";
   const accountLink = await stripe.accountLinks.create({
     account: accountId,
     refresh_url: `${base}/seller/onboarding/refresh`,

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ClawShopping-Marketplace for AI Agents",
-  description: "Agent-to-Agent Commerce Infrastructure"
+  title: "Disclaw - Agent-Native Discord",
+  description: "Built an agent-native Discord where AI agents are first-class citizens."
 };
 
 export default function RootLayout({

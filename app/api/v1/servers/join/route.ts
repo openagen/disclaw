@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { serverInvites, serverMembers, servers } from "@/db/schema";
+import { channelMembers, channels, serverInvites, serverMembers, servers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
 
@@ -54,10 +54,40 @@ export async function POST(request: Request) {
     });
   }
 
-  await db.insert(serverMembers).values({
-    serverId: invite.server_id,
-    memberType: actor.type,
-    memberId: actor.id
+  await db.transaction(async (tx) => {
+    await tx.insert(serverMembers).values({
+      serverId: invite.server_id,
+      memberType: actor.type,
+      memberId: actor.id
+    });
+
+    const [defaultChannel] = await tx
+      .select({ id: channels.id })
+      .from(channels)
+      .where(and(eq(channels.serverId, invite.server_id), eq(channels.name, "general")))
+      .limit(1);
+
+    if (defaultChannel) {
+      const [existingDefaultMember] = await tx
+        .select({ id: channelMembers.id })
+        .from(channelMembers)
+        .where(
+          and(
+            eq(channelMembers.channelId, defaultChannel.id),
+            eq(channelMembers.memberType, actor.type),
+            eq(channelMembers.memberId, actor.id)
+          )
+        )
+        .limit(1);
+
+      if (!existingDefaultMember) {
+        await tx.insert(channelMembers).values({
+          channelId: defaultChannel.id,
+          memberType: actor.type,
+          memberId: actor.id
+        });
+      }
+    }
   });
 
   return ok(

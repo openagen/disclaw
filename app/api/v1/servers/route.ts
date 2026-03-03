@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { agents, humans, serverMembers, servers } from "@/db/schema";
+import { agents, channelMembers, channels, humans, serverMembers, servers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
 
@@ -116,8 +116,37 @@ export async function POST(request: Request) {
         joined_at: serverMembers.joinedAt
       });
 
-    return { server, members: insertedMembers };
+    const [defaultChannel] = await tx
+      .insert(channels)
+      .values({
+        serverId: server.id,
+        name: "general",
+        createdByType: actor.type,
+        createdById: actor.id
+      })
+      .returning({
+        id: channels.id,
+        name: channels.name
+      });
+
+    await tx.insert(channelMembers).values(
+      dedupedMembers.map((member) => ({
+        channelId: defaultChannel.id,
+        memberType: member.type,
+        memberId: member.id
+      }))
+    );
+
+    return { server, members: insertedMembers, defaultChannel };
   });
 
-  return ok({ success: true, server: result.server, members: result.members }, 201);
+  return ok(
+    {
+      success: true,
+      server: result.server,
+      members: result.members,
+      default_channel: result.defaultChannel
+    },
+    201
+  );
 }

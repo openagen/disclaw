@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { channelMembers, channels } from "@/db/schema";
+import { channelMembers, channels, serverMembers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
 
@@ -19,6 +19,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   if (!channel) {
     return fail("NOT_FOUND", "Channel not found", 404);
+  }
+
+  if (!channel.serverId) {
+    return fail("INVALID_CHANNEL", "Channel does not belong to a server", 422);
+  }
+
+  const [serverMembership] = await db
+    .select({ id: serverMembers.id })
+    .from(serverMembers)
+    .where(and(eq(serverMembers.serverId, channel.serverId), eq(serverMembers.memberType, actor.type), eq(serverMembers.memberId, actor.id)))
+    .limit(1);
+
+  if (!serverMembership) {
+    return fail("FORBIDDEN", "Join the server first", 403);
   }
 
   const [existing] = await db

@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { agents, channelMembers, channels, humans } from "@/db/schema";
+import { agents, channelMembers, channels, humans, serverMembers, servers } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
 
@@ -11,6 +11,7 @@ const memberSchema = z.object({
 });
 
 const createChannelSchema = z.object({
+  server_id: z.string().uuid(),
   name: z.string().min(1).max(120),
   members: z.array(memberSchema).max(100).optional().default([])
 });
@@ -21,9 +22,12 @@ export async function GET(request: Request) {
     return fail("UNAUTHORIZED", "Missing or invalid identity", 401);
   }
 
+  const serverId = new URL(request.url).searchParams.get("server_id");
+
   const rows = await db
     .select({
       id: channels.id,
+      server_id: channels.serverId,
       name: channels.name,
       created_by_type: channels.createdByType,
       created_by_id: channels.createdById,
@@ -32,7 +36,13 @@ export async function GET(request: Request) {
     })
     .from(channelMembers)
     .innerJoin(channels, eq(channels.id, channelMembers.channelId))
-    .where(and(eq(channelMembers.memberType, actor.type), eq(channelMembers.memberId, actor.id)))
+    .where(
+      and(
+        eq(channelMembers.memberType, actor.type),
+        eq(channelMembers.memberId, actor.id),
+        serverId ? eq(channels.serverId, serverId) : undefined
+      )
+    )
     .orderBy(desc(channels.createdAt));
 
   return ok({ channels: rows });
@@ -54,6 +64,27 @@ export async function POST(request: Request) {
     return fail("INVALID_REQUEST", "Invalid channel payload", 422);
   }
 
+  const [server] = await db.select({ id: servers.id }).from(servers).where(eq(servers.id, parsed.data.server_id)).limit(1);
+  if (!server) {
+    return fail("SERVER_NOT_FOUND", "Server not found", 404);
+  }
+
+  const [actorServerMembership] = await db
+    .select({ id: serverMembers.id })
+    .from(serverMembers)
+    .where(
+      and(
+        eq(serverMembers.serverId, parsed.data.server_id),
+        eq(serverMembers.memberType, actor.type),
+        eq(serverMembers.memberId, actor.id)
+      )
+    )
+    .limit(1);
+
+  if (!actorServerMembership) {
+    return fail("FORBIDDEN", "You must join the server first", 403);
+  }
+
   const inputMembers = parsed.data.members;
   const memberKeys = new Set<string>();
   const dedupedMembers: Array<{ type: "human" | "agent"; id: string }> = [];
@@ -73,6 +104,7 @@ export async function POST(request: Request) {
 
   const humanIds = dedupedMembers.filter((m) => m.type === "human").map((m) => m.id);
   const agentIds = dedupedMembers.filter((m) => m.type === "agent").map((m) => m.id);
+  const allMemberKeys = new Set(dedupedMembers.map((m) => `${m.type}:${m.id}`));
 
   if (humanIds.length > 0) {
     const existingHumans = await db.select({ id: humans.id }).from(humans).where(inArray(humans.id, humanIds));
@@ -92,10 +124,21 @@ export async function POST(request: Request) {
     }
   }
 
+  const serverMemberRows = await db
+    .select({ member_type: serverMembers.memberType, member_id: serverMembers.memberId })
+    .from(serverMembers)
+    .where(eq(serverMembers.serverId, parsed.data.server_id));
+  const serverMemberKeys = new Set(serverMemberRows.map((m) => `${m.member_type}:${m.member_id}`));
+  const invalidMembers = [...allMemberKeys].filter((key) => !serverMemberKeys.has(key));
+  if (invalidMembers.length > 0) {
+    return fail("INVALID_MEMBERS", "All channel members must already be in the server", 422);
+  }
+
   const result = await db.transaction(async (tx) => {
     const [channel] = await tx
       .insert(channels)
       .values({
+        serverId: parsed.data.server_id,
         name: parsed.data.name,
         createdByType: actor.type,
         createdById: actor.id

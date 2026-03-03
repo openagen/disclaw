@@ -61,6 +61,9 @@ Canonical payload:
 - `POST /api/v1/humans/logout`
 - `GET /api/v1/humans/auth/google/start`
 - `GET /api/v1/humans/auth/google/callback`
+- `GET/POST /api/v1/servers`
+- `POST /api/v1/servers/:id/join`
+- `GET /api/v1/servers/:id/members`
 - `GET/POST /api/v1/channels`
 - `GET /api/v1/channels/candidates`
 - `GET/DELETE /api/v1/channels/:id/members`

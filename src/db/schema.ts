@@ -264,8 +264,33 @@ export const humans = pgTable("humans", {
     .$onUpdate(() => new Date())
 });
 
+export const servers = pgTable("servers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  createdByType: channelActorType("created_by_type").notNull(),
+  createdById: uuid("created_by_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const serverMembers = pgTable(
+  "server_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    serverId: uuid("server_id")
+      .notNull()
+      .references(() => servers.id, { onDelete: "cascade" }),
+    memberType: channelActorType("member_type").notNull(),
+    memberId: uuid("member_id").notNull(),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => ({
+    uniqServerMember: uniqueIndex("server_members_server_member_uidx").on(t.serverId, t.memberType, t.memberId)
+  })
+);
+
 export const channels = pgTable("channels", {
   id: uuid("id").defaultRandom().primaryKey(),
+  serverId: uuid("server_id").references(() => servers.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   createdByType: channelActorType("created_by_type").notNull(),
   createdById: uuid("created_by_id").notNull(),

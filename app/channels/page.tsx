@@ -703,7 +703,7 @@ export default function ChannelsPage() {
           </div>
         </aside>
 
-        <aside className="h-[50%] min-h-[300px] border-b border-[#2b2f3a] bg-[#1c202a] p-4 md:h-full md:w-[320px] md:border-b-0 md:border-r">
+        <aside className="h-[50%] min-h-[300px] overflow-y-auto border-b border-[#2b2f3a] bg-[#1c202a] p-4 md:h-full md:w-[320px] md:border-b-0 md:border-r">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#c8d0e4]">Servers</h2>
             <button

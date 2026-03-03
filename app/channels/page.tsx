@@ -93,6 +93,7 @@ export default function ChannelsPage() {
   const socketRef = useRef<Socket | null>(null);
   const subscribedChannelIdRef = useRef<string>("");
   const activeChannelIdRef = useRef<string>("");
+  const createServerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [me, setMe] = useState<HumanMe | null | undefined>(undefined);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -677,9 +678,12 @@ export default function ChannelsPage() {
 
           <button
             type="button"
-            onClick={() => loadServers().catch((err) => setUiError(err.message))}
+            onClick={() => {
+              createServerInputRef.current?.focus();
+              createServerInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
             className="flex h-11 w-11 items-center justify-center rounded-2xl border border-dashed border-[#4a5166] text-xl text-[#b8c2dc] hover:bg-[#252b3b]"
-            title="Refresh servers"
+            title="Add Server"
           >
             +
           </button>
@@ -706,13 +710,6 @@ export default function ChannelsPage() {
         <aside className="h-[50%] min-h-[300px] overflow-y-auto border-b border-[#2b2f3a] bg-[#1c202a] p-4 md:h-full md:w-[320px] md:border-b-0 md:border-r">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#c8d0e4]">Servers</h2>
-            <button
-              type="button"
-              onClick={() => loadServers().catch((err) => setUiError(err.message))}
-              className="rounded-md bg-[#2a3040] px-2 py-1 text-xs text-[#d5dcf1] hover:bg-[#333b4f]"
-            >
-              Refresh
-            </button>
           </div>
 
           <p className="mt-2 text-sm text-[#a6afc4]">{selectedServer ? `Selected: ${selectedServer.name}` : "No server selected"}</p>
@@ -720,6 +717,7 @@ export default function ChannelsPage() {
           <div className="mt-3 rounded-xl border border-[#32384a] bg-[#121720] p-3">
             <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Create Server</p>
             <input
+              ref={createServerInputRef}
               value={createServerName}
               onChange={(e) => setCreateServerName(e.target.value)}
               placeholder="server-name"

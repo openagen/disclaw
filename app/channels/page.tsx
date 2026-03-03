@@ -27,7 +27,8 @@ type Channel = {
   created_by_type: "human" | "agent";
   created_by_id: string;
   created_at: string;
-  joined_at: string;
+  joined_at: string | null;
+  is_member: boolean;
 };
 
 type Message = {
@@ -109,6 +110,7 @@ export default function ChannelsPage() {
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
+  const [canManageMembers, setCanManageMembers] = useState(false);
   const [serverMembers, setServerMembers] = useState<ServerMember[]>([]);
   const [messageInput, setMessageInput] = useState("");
 
@@ -118,7 +120,7 @@ export default function ChannelsPage() {
 
   const [createName, setCreateName] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
-  const [joinChannelId, setJoinChannelId] = useState("");
+  const [addMemberTarget, setAddMemberTarget] = useState("");
 
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateLoading, setCandidateLoading] = useState(false);
@@ -178,6 +180,7 @@ export default function ChannelsPage() {
       setSelectedChannelId("");
       setMessages([]);
       setMembers([]);
+      setCanManageMembers(false);
       return;
     }
 
@@ -189,10 +192,17 @@ export default function ChannelsPage() {
       setSelectedChannelId("");
       setMessages([]);
       setMembers([]);
+      setCanManageMembers(false);
       return;
     }
 
-    setSelectedChannelId((prev) => (prev && rows.some((c) => c.id === prev) ? prev : rows[0].id));
+    setSelectedChannelId((prev) => {
+      if (prev && rows.some((c) => c.id === prev && c.is_member)) {
+        return prev;
+      }
+      const firstJoined = rows.find((c) => c.is_member);
+      return firstJoined?.id ?? "";
+    });
   }
 
   async function loadServerMembers(serverId: string) {
@@ -216,6 +226,7 @@ export default function ChannelsPage() {
     if (!channelId) return;
     const data = await parseJson(await fetch(`/api/v1/channels/${channelId}/members`, { cache: "no-store" }));
     setMembers((data.members || []) as ChannelMember[]);
+    setCanManageMembers(Boolean(data.can_manage_members));
   }
 
   async function searchCandidates(query: string) {
@@ -477,28 +488,6 @@ export default function ChannelsPage() {
     }
   }
 
-  async function handleJoinChannel() {
-    if (!joinChannelId.trim()) return;
-    setUiError(null);
-
-    try {
-      await parseJson(
-        await fetch(`/api/v1/channels/${joinChannelId.trim()}/join`, {
-          method: "POST"
-        })
-      );
-
-      if (selectedServerId) {
-        await loadChannels(selectedServerId);
-      }
-      setSelectedChannelId(joinChannelId.trim());
-      setJoinChannelId("");
-      setBanner("Joined channel.");
-    } catch (err) {
-      setUiError((err as Error).message);
-    }
-  }
-
   async function handleSendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedChannelId || !messageInput.trim()) return;
@@ -547,6 +536,35 @@ export default function ChannelsPage() {
         }
       } else {
         await loadMembers(selectedChannelId);
+      }
+    } catch (err) {
+      setUiError((err as Error).message);
+    }
+  }
+
+  async function handleAddMemberToChannel() {
+    if (!selectedChannelId || !addMemberTarget) return;
+    setUiError(null);
+    try {
+      const target = serverMemberCandidates.find((x) => `${x.type}:${x.id}` === addMemberTarget);
+      if (!target) {
+        throw new Error("Invalid member target");
+      }
+      await parseJson(
+        await fetch(`/api/v1/channels/${selectedChannelId}/members`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            member_type: target.type,
+            member_id: target.id
+          })
+        })
+      );
+      setBanner("Member added.");
+      setAddMemberTarget("");
+      await loadMembers(selectedChannelId);
+      if (selectedServerId) {
+        await loadChannels(selectedServerId);
       }
     } catch (err) {
       setUiError((err as Error).message);
@@ -816,12 +834,22 @@ export default function ChannelsPage() {
                 <button
                   key={channel.id}
                   type="button"
-                  onClick={() => setSelectedChannelId(channel.id)}
+                  onClick={() => {
+                    if (!channel.is_member) {
+                      setBanner("You are not in this channel. Ask channel admin to add you.");
+                      return;
+                    }
+                    setSelectedChannelId(channel.id);
+                  }}
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
-                    selectedChannelId === channel.id ? "bg-[#5865f2] text-white" : "bg-[#171b23] text-[#c7cede] hover:bg-[#242a37]"
+                    selectedChannelId === channel.id
+                      ? "bg-[#5865f2] text-white"
+                      : channel.is_member
+                        ? "bg-[#171b23] text-[#c7cede] hover:bg-[#242a37]"
+                        : "bg-[#131722] text-[#7f879a]"
                   }`}
                 >
-                  # {channel.name}
+                  {channel.is_member ? "# " : "🔒 "} {channel.name}
                 </button>
               ))
             )}
@@ -881,23 +909,6 @@ export default function ChannelsPage() {
             </Button>
           </div>
 
-          <div className="mt-3 rounded-xl border border-[#32384a] bg-[#121720] p-3">
-            <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Join Channel by ID</p>
-            <input
-              value={joinChannelId}
-              onChange={(e) => setJoinChannelId(e.target.value)}
-              placeholder="channel uuid"
-              className="mt-2 w-full rounded-lg border border-[#384055] bg-[#0f141d] px-3 py-2 text-xs outline-none focus:border-[#7683ff]"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleJoinChannel}
-              className="mt-2 w-full border-[#3a4257] bg-[#1a1f2a] text-[#d7deef] hover:bg-[#232a39]"
-            >
-              Join Channel
-            </Button>
-          </div>
         </aside>
 
         <section className="flex min-h-0 flex-1 flex-col bg-[#11151d]">
@@ -973,6 +984,33 @@ export default function ChannelsPage() {
               </button>
             ) : null}
           </div>
+
+          {selectedChannel && canManageMembers ? (
+            <div className="mt-3 rounded-xl border border-[#32384a] bg-[#121720] p-3">
+              <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Add Server Member</p>
+              <select
+                value={addMemberTarget}
+                onChange={(e) => setAddMemberTarget(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#384055] bg-[#0f141d] px-3 py-2 text-xs outline-none focus:border-[#7683ff]"
+              >
+                <option value="">Select member</option>
+                {serverMemberCandidates.map((candidate) => (
+                  <option key={`${candidate.type}:${candidate.id}`} value={`${candidate.type}:${candidate.id}`}>
+                    {candidate.name} ({candidate.type})
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddMemberToChannel}
+                disabled={!addMemberTarget}
+                className="mt-2 w-full border-[#3a4257] bg-[#1a1f2a] text-[#d7deef] hover:bg-[#232a39]"
+              >
+                Add To Channel
+              </Button>
+            </div>
+          ) : null}
 
           <div className="mt-3 space-y-2">
             {selectedChannel ? (

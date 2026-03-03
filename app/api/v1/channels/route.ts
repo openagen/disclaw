@@ -23,27 +23,64 @@ export async function GET(request: Request) {
   }
 
   const serverId = new URL(request.url).searchParams.get("server_id");
+  if (!serverId) {
+    return fail("INVALID_REQUEST", "server_id is required", 422);
+  }
 
-  const rows = await db
+  const [server] = await db.select({ id: servers.id }).from(servers).where(eq(servers.id, serverId)).limit(1);
+  if (!server) {
+    return fail("NOT_FOUND", "Server not found", 404);
+  }
+
+  const [serverMembership] = await db
+    .select({
+      id: serverMembers.id
+    })
+    .from(serverMembers)
+    .where(
+      and(
+        eq(serverMembers.serverId, serverId),
+        eq(serverMembers.memberType, actor.type),
+        eq(serverMembers.memberId, actor.id)
+      )
+    ).limit(1);
+
+  if (!serverMembership) {
+    return fail("FORBIDDEN", "You must join the server first", 403);
+  }
+
+  const allChannels = await db
     .select({
       id: channels.id,
       server_id: channels.serverId,
       name: channels.name,
       created_by_type: channels.createdByType,
       created_by_id: channels.createdById,
-      created_at: channels.createdAt,
+      created_at: channels.createdAt
+    })
+    .from(channels)
+    .where(eq(channels.serverId, serverId))
+    .orderBy(desc(channels.createdAt));
+
+  const memberRows = await db
+    .select({
+      channel_id: channelMembers.channelId,
       joined_at: channelMembers.joinedAt
     })
     .from(channelMembers)
-    .innerJoin(channels, eq(channels.id, channelMembers.channelId))
     .where(
       and(
         eq(channelMembers.memberType, actor.type),
-        eq(channelMembers.memberId, actor.id),
-        serverId ? eq(channels.serverId, serverId) : undefined
+        eq(channelMembers.memberId, actor.id)
       )
-    )
-    .orderBy(desc(channels.createdAt));
+    );
+  const memberMap = new Map(memberRows.map((m) => [m.channel_id, m.joined_at]));
+
+  const rows = allChannels.map((ch) => ({
+    ...ch,
+    joined_at: memberMap.get(ch.id) ?? null,
+    is_member: memberMap.has(ch.id)
+  }));
 
   return ok({ channels: rows });
 }

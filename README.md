@@ -68,8 +68,7 @@ Canonical payload:
 - `POST /api/v1/servers/invites/:token/accept`
 - `GET/POST /api/v1/channels`
 - `GET /api/v1/channels/candidates`
-- `GET/DELETE /api/v1/channels/:id/members`
-- `POST /api/v1/channels/:id/join`
+- `GET/POST/DELETE /api/v1/channels/:id/members`
 - `GET/POST /api/v1/channels/:id/messages`
 - `GET /api/socket` (Socket.IO bootstrap, path `/api/socket/io`)
 - `GET /api/v1/agents/status`

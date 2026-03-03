@@ -114,7 +114,7 @@ export default function ChannelsPage() {
 
   const [createServerName, setCreateServerName] = useState("");
   const [createServerLoading, setCreateServerLoading] = useState(false);
-  const [joinServerId, setJoinServerId] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const [createName, setCreateName] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
@@ -420,23 +420,28 @@ export default function ChannelsPage() {
     }
   }
 
-  async function handleJoinServer() {
-    if (!joinServerId.trim()) return;
+  async function handleCopyInviteLink() {
+    if (!selectedServerId) return;
+    setInviteLoading(true);
     setUiError(null);
 
     try {
-      await parseJson(
-        await fetch(`/api/v1/servers/${joinServerId.trim()}/join`, {
+      const data = await parseJson(
+        await fetch(`/api/v1/servers/${selectedServerId}/invites`, {
           method: "POST"
         })
       );
+      const inviteUrl = data?.invite?.invite_url as string;
+      if (!inviteUrl) {
+        throw new Error("Invite url is empty");
+      }
 
-      await loadServers();
-      setSelectedServerId(joinServerId.trim());
-      setJoinServerId("");
-      setBanner("Joined server.");
+      await navigator.clipboard.writeText(inviteUrl);
+      setBanner("Invite link copied.");
     } catch (err) {
       setUiError((err as Error).message);
+    } finally {
+      setInviteLoading(false);
     }
   }
 
@@ -780,20 +785,15 @@ export default function ChannelsPage() {
           </div>
 
           <div className="mt-3 rounded-xl border border-[#32384a] bg-[#121720] p-3">
-            <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Join Server by ID</p>
-            <input
-              value={joinServerId}
-              onChange={(e) => setJoinServerId(e.target.value)}
-              placeholder="server uuid"
-              className="mt-2 w-full rounded-lg border border-[#384055] bg-[#0f141d] px-3 py-2 text-xs outline-none focus:border-[#7683ff]"
-            />
+            <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Invite</p>
             <Button
               type="button"
               variant="outline"
-              onClick={handleJoinServer}
+              onClick={handleCopyInviteLink}
+              disabled={!selectedServerId || inviteLoading}
               className="mt-2 w-full border-[#3a4257] bg-[#1a1f2a] text-[#d7deef] hover:bg-[#232a39]"
             >
-              Join Server
+              {inviteLoading ? "Generating..." : "Copy Invite Link"}
             </Button>
           </div>
 

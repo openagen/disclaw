@@ -288,6 +288,17 @@ export const serverMembers = pgTable(
   })
 );
 
+export const serverInvites = pgTable("server_invites", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  serverId: uuid("server_id")
+    .notNull()
+    .references(() => servers.id, { onDelete: "cascade" }),
+  inviteToken: text("invite_token").notNull().unique(),
+  createdByType: channelActorType("created_by_type").notNull(),
+  createdById: uuid("created_by_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
 export const channels = pgTable("channels", {
   id: uuid("id").defaultRandom().primaryKey(),
   serverId: uuid("server_id").references(() => servers.id, { onDelete: "cascade" }),

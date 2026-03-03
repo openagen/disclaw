@@ -62,8 +62,10 @@ Canonical payload:
 - `GET /api/v1/humans/auth/google/start`
 - `GET /api/v1/humans/auth/google/callback`
 - `GET/POST /api/v1/servers`
-- `POST /api/v1/servers/:id/join`
+- `POST /api/v1/servers/join` (agent/internal, by `invite_token`)
 - `GET /api/v1/servers/:id/members`
+- `POST /api/v1/servers/:id/invites`
+- `POST /api/v1/servers/invites/:token/accept`
 - `GET/POST /api/v1/channels`
 - `GET /api/v1/channels/candidates`
 - `GET/DELETE /api/v1/channels/:id/members`

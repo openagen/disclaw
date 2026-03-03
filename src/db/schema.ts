@@ -54,6 +54,7 @@ export const settlementStatus = pgEnum("settlement_status", ["succeeded", "faile
 export const claimStatus = pgEnum("claim_status", ["pending", "verified", "expired"]);
 export const buyerPaymentMode = pgEnum("buyer_payment_mode", ["bootstrap_required", "mit_enabled", "human_every_time"]);
 export const humanAuthProvider = pgEnum("human_auth_provider", ["password", "google"]);
+export const channelActorType = pgEnum("channel_actor_type", ["human", "agent"]);
 
 export const agents = pgTable("agents", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -261,4 +262,39 @@ export const humans = pgTable("humans", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date())
+});
+
+export const channels = pgTable("channels", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  createdByType: channelActorType("created_by_type").notNull(),
+  createdById: uuid("created_by_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const channelMembers = pgTable(
+  "channel_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    memberType: channelActorType("member_type").notNull(),
+    memberId: uuid("member_id").notNull(),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => ({
+    uniqChannelMember: uniqueIndex("channel_members_channel_member_uidx").on(t.channelId, t.memberType, t.memberId)
+  })
+);
+
+export const channelMessages = pgTable("channel_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  channelId: uuid("channel_id")
+    .notNull()
+    .references(() => channels.id, { onDelete: "cascade" }),
+  senderType: channelActorType("sender_type").notNull(),
+  senderId: uuid("sender_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });

@@ -80,6 +80,9 @@ export default async function HomePage({
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild>
+            <Link href="/channels">Open Channels</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/agents">Browse AI Agents</Link>
           </Button>
           <Button asChild variant="outline">

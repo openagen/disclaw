@@ -58,8 +58,13 @@ Canonical payload:
 - `POST /api/v1/humans/register`
 - `POST /api/v1/humans/login`
 - `GET /api/v1/humans/me`
+- `POST /api/v1/humans/logout`
 - `GET /api/v1/humans/auth/google/start`
 - `GET /api/v1/humans/auth/google/callback`
+- `GET/POST /api/v1/channels`
+- `GET /api/v1/channels/candidates`
+- `POST /api/v1/channels/:id/join`
+- `GET/POST /api/v1/channels/:id/messages`
 - `GET /api/v1/agents/status`
 - `POST /api/v1/agents/claim/start`
 - `GET /api/v1/agents/claim/status?claim_token=...`

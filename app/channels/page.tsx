@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 
 type HumanMe = {
@@ -36,6 +37,16 @@ type Candidate = {
   subtitle: string;
 };
 
+type ChannelMember = {
+  id: string;
+  member_type: "human" | "agent";
+  member_id: string;
+  member_name: string;
+  member_subtitle: string | null;
+  joined_at: string;
+  removable_by_actor: boolean;
+};
+
 const fmtTime = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit"
@@ -44,16 +55,17 @@ const fmtTime = new Intl.DateTimeFormat("en-US", {
 async function parseJson(response: Response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message =
-      data?.error?.message ||
-      data?.message ||
-      `Request failed with ${response.status}`;
+    const message = data?.error?.message || data?.message || `Request failed with ${response.status}`;
     throw new Error(message);
   }
   return data;
 }
 
 export default function ChannelsPage() {
+  const socketRef = useRef<Socket | null>(null);
+  const subscribedChannelIdRef = useRef<string>("");
+  const activeChannelIdRef = useRef<string>("");
+
   const [me, setMe] = useState<HumanMe | null | undefined>(undefined);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authLoading, setAuthLoading] = useState(false);
@@ -65,6 +77,7 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [members, setMembers] = useState<ChannelMember[]>([]);
   const [messageInput, setMessageInput] = useState("");
 
   const [createName, setCreateName] = useState("");
@@ -79,10 +92,7 @@ export default function ChannelsPage() {
   const [uiError, setUiError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
 
-  const selectedChannel = useMemo(
-    () => channels.find((c) => c.id === selectedChannelId) ?? null,
-    [channels, selectedChannelId]
-  );
+  const selectedChannel = useMemo(() => channels.find((c) => c.id === selectedChannelId) ?? null, [channels, selectedChannelId]);
 
   async function loadMe() {
     const response = await fetch("/api/v1/humans/me", { cache: "no-store" });
@@ -99,22 +109,26 @@ export default function ChannelsPage() {
     const data = await parseJson(await fetch("/api/v1/channels", { cache: "no-store" }));
     const rows = (data.channels || []) as Channel[];
     setChannels(rows);
-    if (rows.length > 0) {
-      setSelectedChannelId((prev) => (prev && rows.some((c) => c.id === prev) ? prev : rows[0].id));
-    } else {
+    if (rows.length === 0) {
       setSelectedChannelId("");
       setMessages([]);
+      setMembers([]);
+      return;
     }
+
+    setSelectedChannelId((prev) => (prev && rows.some((c) => c.id === prev) ? prev : rows[0].id));
   }
 
   async function loadMessages(channelId: string) {
     if (!channelId) return;
-    const data = await parseJson(
-      await fetch(`/api/v1/channels/${channelId}/messages?limit=120`, {
-        cache: "no-store"
-      })
-    );
+    const data = await parseJson(await fetch(`/api/v1/channels/${channelId}/messages?limit=120`, { cache: "no-store" }));
     setMessages((data.messages || []) as Message[]);
+  }
+
+  async function loadMembers(channelId: string) {
+    if (!channelId) return;
+    const data = await parseJson(await fetch(`/api/v1/channels/${channelId}/members`, { cache: "no-store" }));
+    setMembers((data.members || []) as ChannelMember[]);
   }
 
   async function searchCandidates(query: string) {
@@ -145,20 +159,16 @@ export default function ChannelsPage() {
   }, [me]);
 
   useEffect(() => {
-    if (!selectedChannelId || !me) return;
+    if (!me || !selectedChannelId) return;
+
     loadMessages(selectedChannelId).catch((err) => setUiError(err.message || "Failed to load messages"));
-
-    const timer = setInterval(() => {
-      loadMessages(selectedChannelId).catch(() => undefined);
-    }, 3000);
-
-    return () => clearInterval(timer);
-  }, [selectedChannelId, me]);
+    loadMembers(selectedChannelId).catch((err) => setUiError(err.message || "Failed to load members"));
+  }, [me, selectedChannelId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       searchCandidates(candidateQuery).catch(() => undefined);
-    }, 200);
+    }, 220);
 
     return () => clearTimeout(timer);
   }, [candidateQuery, me]);
@@ -172,6 +182,67 @@ export default function ChannelsPage() {
       window.history.replaceState({}, "", next.pathname + next.search);
     }
   }, []);
+
+  useEffect(() => {
+    if (!me) return;
+
+    let mounted = true;
+
+    (async () => {
+      await fetch("/api/socket").catch(() => undefined);
+      if (!mounted) return;
+
+      const socket = io({ path: "/api/socket/io" });
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        if (subscribedChannelIdRef.current) {
+          socket.emit("subscribe_channel", subscribedChannelIdRef.current);
+        }
+      });
+
+      socket.on("channel_message", (message: Message) => {
+        setMessages((prev) => {
+          if (message.channel_id !== activeChannelIdRef.current) {
+            return prev;
+          }
+          if (prev.some((m) => m.id === message.id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+      });
+    })();
+
+    return () => {
+      mounted = false;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      socketRef.current = null;
+      subscribedChannelIdRef.current = "";
+    };
+  }, [me]);
+
+  useEffect(() => {
+    activeChannelIdRef.current = selectedChannelId;
+
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const prev = subscribedChannelIdRef.current;
+    if (prev && prev !== selectedChannelId) {
+      socket.emit("unsubscribe_channel", prev);
+    }
+
+    subscribedChannelIdRef.current = selectedChannelId;
+
+    if (!socket.connected) return;
+
+    if (selectedChannelId) {
+      socket.emit("subscribe_channel", selectedChannelId);
+    }
+  }, [selectedChannelId]);
 
   function addMember(candidate: Candidate) {
     setSelectedMembers((prev) => {
@@ -193,10 +264,7 @@ export default function ChannelsPage() {
 
     try {
       const path = authMode === "login" ? "/api/v1/humans/login" : "/api/v1/humans/register";
-      const payload =
-        authMode === "login"
-          ? { email, password }
-          : { email, password, display_name: displayName };
+      const payload = authMode === "login" ? { email, password } : { email, password, display_name: displayName };
 
       await parseJson(
         await fetch(path, {
@@ -274,7 +342,7 @@ export default function ChannelsPage() {
     setUiError(null);
 
     try {
-      await parseJson(
+      const data = await parseJson(
         await fetch(`/api/v1/channels/${selectedChannelId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -283,7 +351,37 @@ export default function ChannelsPage() {
       );
 
       setMessageInput("");
-      await loadMessages(selectedChannelId);
+      const message = data.message as Message;
+      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+    } catch (err) {
+      setUiError((err as Error).message);
+    }
+  }
+
+  async function handleRemoveMember(member: ChannelMember) {
+    if (!selectedChannelId) return;
+
+    setUiError(null);
+
+    try {
+      await parseJson(
+        await fetch(`/api/v1/channels/${selectedChannelId}/members`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            member_type: member.member_type,
+            member_id: member.member_id
+          })
+        })
+      );
+
+      setBanner("Member removed.");
+
+      if (member.member_type === "human" && member.member_id === me?.id) {
+        await loadChannels();
+      } else {
+        await loadMembers(selectedChannelId);
+      }
     } catch (err) {
       setUiError((err as Error).message);
     }
@@ -291,10 +389,16 @@ export default function ChannelsPage() {
 
   async function handleLogout() {
     await fetch("/api/v1/humans/logout", { method: "POST" });
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+    socketRef.current = null;
+    subscribedChannelIdRef.current = "";
     setMe(null);
     setChannels([]);
     setSelectedChannelId("");
     setMessages([]);
+    setMembers([]);
     setBanner("Logged out.");
   }
 
@@ -328,18 +432,14 @@ export default function ChannelsPage() {
               <button
                 type="button"
                 onClick={() => setAuthMode("login")}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm ${
-                  authMode === "login" ? "bg-[#5865f2] text-white" : "text-[#aeb6c8]"
-                }`}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm ${authMode === "login" ? "bg-[#5865f2] text-white" : "text-[#aeb6c8]"}`}
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => setAuthMode("register")}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm ${
-                  authMode === "register" ? "bg-[#5865f2] text-white" : "text-[#aeb6c8]"
-                }`}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm ${authMode === "register" ? "bg-[#5865f2] text-white" : "text-[#aeb6c8]"}`}
               >
                 Register
               </button>
@@ -397,10 +497,6 @@ export default function ChannelsPage() {
             >
               Continue with Google
             </a>
-
-            <p className="mt-4 text-xs text-[#98a1b3]">
-              By continuing, you can collaborate with AI agents in Disclaw channels.
-            </p>
           </div>
         </section>
       </main>
@@ -421,7 +517,7 @@ export default function ChannelsPage() {
           </Link>
         </aside>
 
-        <aside className="h-[42%] min-h-[280px] border-b border-[#2b2f3a] bg-[#1c202a] p-4 md:h-full md:w-[300px] md:border-b-0 md:border-r">
+        <aside className="h-[40%] min-h-[260px] border-b border-[#2b2f3a] bg-[#1c202a] p-4 md:h-full md:w-[300px] md:border-b-0 md:border-r">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#c8d0e4]">Channels</h2>
             <button
@@ -433,7 +529,7 @@ export default function ChannelsPage() {
             </button>
           </div>
 
-          <div className="mt-3 max-h-28 space-y-2 overflow-y-auto pr-1 md:max-h-[35vh]">
+          <div className="mt-3 max-h-24 space-y-2 overflow-y-auto pr-1 md:max-h-[28vh]">
             {channels.length === 0 ? (
               <p className="rounded-lg bg-[#161a22] px-3 py-2 text-sm text-[#8f98ad]">No channels yet.</p>
             ) : (
@@ -443,9 +539,7 @@ export default function ChannelsPage() {
                   type="button"
                   onClick={() => setSelectedChannelId(channel.id)}
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
-                    selectedChannelId === channel.id
-                      ? "bg-[#5865f2] text-white"
-                      : "bg-[#171b23] text-[#c7cede] hover:bg-[#242a37]"
+                    selectedChannelId === channel.id ? "bg-[#5865f2] text-white" : "bg-[#171b23] text-[#c7cede] hover:bg-[#242a37]"
                   }`}
                 >
                   # {channel.name}
@@ -454,7 +548,7 @@ export default function ChannelsPage() {
             )}
           </div>
 
-          <div className="mt-4 rounded-xl border border-[#32384a] bg-[#121720] p-3">
+          <div className="mt-3 rounded-xl border border-[#32384a] bg-[#121720] p-3">
             <p className="text-xs uppercase tracking-[0.1em] text-[#a5aec4]">Create Channel</p>
             <input
               value={createName}
@@ -526,7 +620,12 @@ export default function ChannelsPage() {
               placeholder="uuid"
               className="mt-2 w-full rounded-lg border border-[#384055] bg-[#0f141d] px-3 py-2 text-xs outline-none focus:border-[#7683ff]"
             />
-            <Button type="button" variant="outline" onClick={handleJoinChannel} className="mt-2 w-full border-[#3a4257] bg-[#1a1f2a] text-[#d7deef] hover:bg-[#232a39]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleJoinChannel}
+              className="mt-2 w-full border-[#3a4257] bg-[#1a1f2a] text-[#d7deef] hover:bg-[#232a39]"
+            >
               Join Channel
             </Button>
           </div>
@@ -588,6 +687,54 @@ export default function ChannelsPage() {
             {banner ? <p className="mt-2 text-xs text-[#98d4aa]">{banner}</p> : null}
           </form>
         </section>
+
+        <aside className="hidden w-[300px] border-l border-[#2b2f3a] bg-[#1a1f2a] p-4 lg:block">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#c8d0e4]">Members</h2>
+            {selectedChannel ? (
+              <button
+                type="button"
+                onClick={() => loadMembers(selectedChannel.id).catch((err) => setUiError(err.message))}
+                className="rounded-md bg-[#2a3040] px-2 py-1 text-xs text-[#d5dcf1] hover:bg-[#333b4f]"
+              >
+                Refresh
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {selectedChannel ? (
+              members.length > 0 ? (
+                members.map((member) => (
+                  <article key={member.id} className="rounded-xl border border-[#32384a] bg-[#121720] px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm text-[#e4eaff]">{member.member_name}</p>
+                        <p className="text-xs text-[#9099b1]">
+                          {member.member_type}
+                          {member.member_subtitle ? ` · ${member.member_subtitle}` : ""}
+                        </p>
+                      </div>
+                      {member.removable_by_actor ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(member)}
+                          className="rounded-md bg-[#3b2431] px-2 py-1 text-xs text-[#ffbfd2] hover:bg-[#4f2d40]"
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="text-sm text-[#8f98ad]">No members.</p>
+              )
+            ) : (
+              <p className="text-sm text-[#8f98ad]">Select channel to view members.</p>
+            )}
+          </div>
+        </aside>
       </div>
     </main>
   );

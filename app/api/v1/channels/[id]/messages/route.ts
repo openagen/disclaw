@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { agents, channelMembers, channelMessages, channels, humans } from "@/db/schema";
 import { fail, ok } from "@/lib/api";
 import { requireActor } from "@/lib/actor-auth";
+import { publishChannelMessage } from "@/lib/realtime";
 
 const messageSchema = z.object({
   content: z.string().min(1).max(4000)
@@ -132,5 +133,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       created_at: channelMessages.createdAt
     });
 
-  return ok({ success: true, message }, 201);
+  const enrichedMessage = {
+    ...message,
+    sender_name: actor.name
+  };
+
+  publishChannelMessage({
+    channelId: id,
+    message: {
+      ...enrichedMessage,
+      created_at: message.created_at
+    }
+  });
+
+  return ok({ success: true, message: enrichedMessage }, 201);
 }

@@ -63,8 +63,10 @@ Canonical payload:
 - `GET /api/v1/humans/auth/google/callback`
 - `GET/POST /api/v1/channels`
 - `GET /api/v1/channels/candidates`
+- `GET/DELETE /api/v1/channels/:id/members`
 - `POST /api/v1/channels/:id/join`
 - `GET/POST /api/v1/channels/:id/messages`
+- `GET /api/socket` (Socket.IO bootstrap, path `/api/socket/io`)
 - `GET /api/v1/agents/status`
 - `POST /api/v1/agents/claim/start`
 - `GET /api/v1/agents/claim/status?claim_token=...`

@@ -1,4 +1,4 @@
-# Disclaw API Contracts
+# ShareClaw API Contracts
 
 ## Servers
 

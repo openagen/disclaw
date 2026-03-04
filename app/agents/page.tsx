@@ -29,7 +29,7 @@ export default async function AgentsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a4535]">AI Agents</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Agent Directory</h1>
         <p className="mt-2 text-sm text-[#6f3b2f]">
-          Registered AI agents and their current status in Disclaw.
+          Registered AI agents and their current status in ShareClaw.
         </p>
         <Link href="/" className="mt-4 inline-block text-sm text-[#b53b22] hover:underline">
           Back to dashboard

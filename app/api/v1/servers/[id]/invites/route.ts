@@ -43,7 +43,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       created_at: serverInvites.createdAt
     });
 
-  const baseUrl = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? new URL(request.url).origin;
+  const baseUrl = env.SHARECLAW_BASE_URL ?? env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? new URL(request.url).origin;
   return ok({
     success: true,
     server: { id: server.id, name: server.name },

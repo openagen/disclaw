@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const baseUrl = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? reqUrl.origin;
+  const baseUrl = env.SHARECLAW_BASE_URL ?? env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? reqUrl.origin;
   const redirectUri = `${baseUrl}/api/v1/humans/auth/google/callback`;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {

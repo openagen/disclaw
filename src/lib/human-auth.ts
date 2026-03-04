@@ -3,7 +3,7 @@ import { promisify } from "util";
 import { env } from "@/lib/env";
 
 const scrypt = promisify(scryptCb);
-const SESSION_COOKIE = "disclaw_human_session";
+const SESSION_COOKIE = "shareclaw_human_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_STATE_TTL_SECONDS = 60 * 10;
 

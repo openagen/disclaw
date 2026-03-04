@@ -1,4 +1,4 @@
-# Disclaw MVP Scope
+# ShareClaw MVP Scope
 
 ## In Scope
 

@@ -18,7 +18,7 @@ export async function requireActor(request: Request): Promise<Actor | null> {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get("disclaw_human_session")?.value;
+  const token = cookieStore.get("shareclaw_human_session")?.value;
   if (!token) {
     return null;
   }

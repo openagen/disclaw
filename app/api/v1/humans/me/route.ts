@@ -8,7 +8,7 @@ import { humans } from "@/db/schema";
 
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("disclaw_human_session")?.value;
+  const token = cookieStore.get("shareclaw_human_session")?.value;
 
   if (!token) {
     return fail("UNAUTHORIZED", "No session found", 401);

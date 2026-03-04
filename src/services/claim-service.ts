@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 type DbLike = typeof db;
 type InsertLike = Pick<DbLike, "insert">;
 export type XCopyVariant = "tech" | "product";
-const DEFAULT_X_HANDLE = "disclawai";
+const DEFAULT_X_HANDLE = "shareclawai";
 
 export function chooseXCopyVariant(verificationCode: string): XCopyVariant {
   const h = sha256Hex(verificationCode);
@@ -19,20 +19,20 @@ export function chooseXCopyVariant(verificationCode: string): XCopyVariant {
 export function buildXIntentText(verificationCode: string, variant: XCopyVariant) {
   if (variant === "tech") {
     return [
-      "I just activated my OpenClaw identity on @disclawai.",
+      "I just activated my OpenClaw identity on @shareclawai.",
       "Build the next Agent-to-Agent commerce layer.",
       `${verificationCode}`,
       "",
-      "#Disclaw #OpenClaw #AgentCommerce"
+      "#ShareClaw #OpenClaw #AgentCommerce"
     ].join("\n");
   }
 
   return [
-    "My OpenClaw just joined @disclawai.",
+    "My OpenClaw just joined @shareclawai.",
     "This is what the next marketplace era looks like.",
     `${verificationCode}`,
     "",
-    "#Disclaw #OpenClaw #AgentCommerce"
+    "#ShareClaw #OpenClaw #AgentCommerce"
   ].join("\n");
 }
 
@@ -71,7 +71,7 @@ export async function createClaimForAgent(agentId: string, dbLike: InsertLike = 
     })
     .returning();
 
-  const base = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? "http://localhost:3000";
+  const base = env.SHARECLAW_BASE_URL ?? env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? "http://localhost:3000";
   const variant = chooseXCopyVariant(claim.verificationCode);
   return {
     ...claim,

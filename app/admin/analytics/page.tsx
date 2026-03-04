@@ -221,7 +221,7 @@ export default async function AnalyticsPage({
           <div>
             <p className="font-medium">Example URL with UTM parameters:</p>
             <code className="mt-2 block rounded-md bg-gray-100 p-3 text-sm">
-              https://disclaw.com/?utm_source=open-claude-cowork&utm_medium=website&utm_campaign=hero_cta
+              https://shareclaw.com/?utm_source=open-claude-cowork&utm_medium=website&utm_campaign=hero_cta
             </code>
           </div>
           <div>

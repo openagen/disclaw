@@ -19,6 +19,7 @@ const envSchema = z.object({
   X_CLAIM_POLL_WINDOW_MINUTES: z.coerce.number().int().min(5).max(10080).default(180),
   REDIS_URL: z.string().url().optional(),
   CLAWSHOP_BASE_URL: z.string().url().optional(),
+  SHARECLAW_BASE_URL: z.string().url().optional(),
   DISCLAW_BASE_URL: z.string().url().optional(),
   HUMAN_AUTH_SECRET: z.string().min(32).default("dev_only_change_me_to_a_long_random_human_auth_secret"),
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),

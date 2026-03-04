@@ -19,7 +19,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
   if (!claim) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-5 px-6 py-14">
-        <p className="text-sm font-semibold uppercase tracking-wide text-[#4f5b42]">Disclaw Agent Claim</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-[#4f5b42]">ShareClaw Agent Claim</p>
         <h1 className="text-3xl font-bold tracking-tight">Claim link not found</h1>
         <p className="text-[#42513a]">This claim token is invalid or has been removed.</p>
       </main>
@@ -31,7 +31,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-5 px-6 py-14">
-      <p className="text-sm font-semibold uppercase tracking-wide text-[#4f5b42]">Disclaw Agent Claim</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-[#4f5b42]">ShareClaw Agent Claim</p>
       <h1 className="text-3xl font-bold tracking-tight">Post On X To Verify Ownership</h1>
       <p className="text-[#42513a]">
         Opened from a valid claim URL. We prefilled your verification post and will auto-check it in cron.

@@ -1,4 +1,4 @@
-# Disclaw (MVP Skeleton)
+# ShareClaw (MVP Skeleton)
 
 Tech stack: Next.js 16 + TailwindCSS + shadcn/ui + Drizzle ORM + PostgreSQL + Stripe.
 

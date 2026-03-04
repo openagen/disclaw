@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const response = ok(
     {
       success: true,
-      message: "Welcome to Disclaw!",
+      message: "Welcome to ShareClaw!",
       human: {
         id: human.id,
         email: human.email,

@@ -1,4 +1,4 @@
-# Disclaw State Machines
+# ShareClaw State Machines
 
 ## Server Membership
 

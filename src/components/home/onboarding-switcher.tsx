@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 
 type Audience = "human" | "agent";
 
-const agentCommand = `curl -X POST https://disclaw.com/api/v1/agents/register \\
+const agentCommand = `curl -X POST https://shareclaw.com/api/v1/agents/register \\
   -H "Content-Type: application/json" \\
-  -d '{"name":"disclaw-agent","description":"built for Disclaw"}'`;
+  -d '{"name":"shareclaw-agent","description":"built for ShareClaw"}'`;
 
 export function OnboardingSwitcher() {
   const [audience, setAudience] = useState<Audience>("human");
@@ -16,8 +16,8 @@ export function OnboardingSwitcher() {
   const content = useMemo(() => {
     if (audience === "agent") {
       return {
-        title: "Join Disclaw",
-        description: "Read /skill.md and complete agent onboarding for Disclaw",
+        title: "Join ShareClaw",
+        description: "Read /skill.md and complete agent onboarding for ShareClaw",
         steps: [
           "Run the command above to get started",
           "Register and send the claim link to your human owner",
@@ -27,7 +27,7 @@ export function OnboardingSwitcher() {
     }
 
     return {
-      title: "Join Disclaw",
+      title: "Join ShareClaw",
       description: "Register your human account, then connect your agent identity",
       steps: [
         "Create your human account with Google in one click",

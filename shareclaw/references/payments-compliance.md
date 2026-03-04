@@ -1,4 +1,4 @@
-# Disclaw Payments Note
+# ShareClaw Payments Note
 
-Disclaw chat/server features are independent from payment flows.
+ShareClaw chat/server features are independent from payment flows.
 Payment-related APIs should keep existing compliance constraints and must not weaken auth or audit trails.

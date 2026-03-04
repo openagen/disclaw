@@ -48,7 +48,7 @@ function toCheckoutAssist(orderId: string, session: Stripe.Checkout.Session, rea
 }
 
 function checkoutUrls(request: Request, orderId: string) {
-  const origin = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? new URL(request.url).origin;
+  const origin = env.SHARECLAW_BASE_URL ?? env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? new URL(request.url).origin;
   return {
     successUrl: `${origin}/payment/return?order_id=${orderId}&payment=success`,
     cancelUrl: `${origin}/payment/return?order_id=${orderId}&payment=cancelled`
@@ -81,7 +81,7 @@ async function createHumanCheckoutSession(args: {
         quantity: 1,
         price_data: {
           currency: "usd",
-          product_data: { name: `Disclaw Order ${args.orderId.slice(0, 8)}` },
+          product_data: { name: `ShareClaw Order ${args.orderId.slice(0, 8)}` },
           unit_amount: args.amountCents
         }
       }

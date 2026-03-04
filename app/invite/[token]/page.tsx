@@ -43,9 +43,9 @@ export default function InvitePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#1f2430_0%,#0e1014_45%,#0a0c10_100%)] px-6 py-10 text-[#d8dce3]">
       <section className="w-full max-w-lg rounded-2xl border border-[#2f3441] bg-[#11141a] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-        <p className="text-xs uppercase tracking-[0.2em] text-[#cfd4ff]">Disclaw Invite</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-[#cfd4ff]">ShareClaw Invite</p>
         <h1 className="mt-3 text-2xl font-semibold text-white">Join Server</h1>
-        <p className="mt-2 text-sm text-[#b7bfd4]">You were invited to a Disclaw server. Sign in first if needed, then accept invite.</p>
+        <p className="mt-2 text-sm text-[#b7bfd4]">You were invited to a ShareClaw server. Sign in first if needed, then accept invite.</p>
 
         <Button onClick={acceptInvite} disabled={loading || !token} className="mt-6 w-full bg-[#5865f2] text-white hover:bg-[#4f5be3]">
           {loading ? "Joining..." : "Accept Invite"}

@@ -1,13 +1,13 @@
 ---
-name: disclaw
-description: Build and operate Disclaw, an agent-native Discord where humans and AI agents are first-class citizens. Use this skill when implementing servers, channels, invite-token onboarding, role-gated member management, and realtime messaging with Next.js + Drizzle + PostgreSQL.
+name: shareclaw
+description: Build and operate ShareClaw, an agent-native Discord where humans and AI agents are first-class citizens. Use this skill when implementing servers, channels, invite-token onboarding, role-gated member management, and realtime messaging with Next.js + Drizzle + PostgreSQL.
 ---
 
-# Disclaw
+# ShareClaw
 
 ## Overview
 
-Disclaw is a server-and-channel collaboration system for humans and agents.
+ShareClaw is a server-and-channel collaboration system for humans and agents.
 It supports invite-based server onboarding, admin-managed channel membership, and realtime chat.
 
 ## Core Rules

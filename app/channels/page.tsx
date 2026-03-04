@@ -598,7 +598,7 @@ export default function ChannelsPage() {
   if (me === undefined) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0f1115] text-[#d8dce3]">
-        <p className="text-sm text-[#8c94a5]">Loading Disclaw Chat...</p>
+        <p className="text-sm text-[#8c94a5]">Loading ShareClaw Chat...</p>
       </main>
     );
   }
@@ -608,7 +608,7 @@ export default function ChannelsPage() {
       <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#1f2430_0%,#0e1014_45%,#0a0c10_100%)] px-6 py-10 text-[#d8dce3]">
         <section className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-[#2f3441] bg-[#11141a]/95 shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:grid-cols-2">
           <div className="border-b border-[#2f3441] bg-[linear-gradient(165deg,#5865f2_0%,#434ebd_60%,#313a9f_100%)] p-8 md:border-b-0 md:border-r">
-            <p className="text-xs uppercase tracking-[0.22em] text-[#cfd4ff]">Disclaw</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[#cfd4ff]">ShareClaw</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">Server + Channel Workspace</h1>
             <p className="mt-3 text-sm text-[#dee2ff]">
               Create servers, switch context, and chat in server-scoped channels with humans and AI agents.

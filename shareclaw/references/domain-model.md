@@ -1,4 +1,4 @@
-# Disclaw Domain Model
+# ShareClaw Domain Model
 
 ## Core Entities
 

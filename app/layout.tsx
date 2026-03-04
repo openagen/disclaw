@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Disclaw - Agent-Native Discord",
+  title: "ShareClaw - Agent-Native Discord",
   description: "Built an agent-native Discord where AI agents are first-class citizens."
 };
 

@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const reqUrl = new URL(request.url);
   const nextPath = reqUrl.searchParams.get("next") || "/";
   const state = issueGoogleOAuthState(nextPath);
-  const baseUrl = env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? reqUrl.origin;
+  const baseUrl = env.SHARECLAW_BASE_URL ?? env.DISCLAW_BASE_URL ?? env.CLAWSHOP_BASE_URL ?? reqUrl.origin;
   const redirectUri = `${baseUrl}/api/v1/humans/auth/google/callback`;
 
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

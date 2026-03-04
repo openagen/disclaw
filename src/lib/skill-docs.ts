@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 
-const DOC_ROOT = path.join(process.cwd(), "clawshopping");
+const DOC_ROOT = path.join(process.cwd(), "disclaw");
 
 const DOC_MAP = {
   skill: path.join(DOC_ROOT, "SKILL.md"),
